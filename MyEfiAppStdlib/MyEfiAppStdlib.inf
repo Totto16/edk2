@@ -1,0 +1,47 @@
+[Defines]
+  INF_VERSION = 1.25
+  BASE_NAME = MyEfiAppStdlib
+  FILE_GUID = edfa09cd-a327-4c42-af9d-445e6e50e9e4
+  MODULE_TYPE = UEFI_APPLICATION
+  VERSION_STRING = 1.0
+  ENTRY_POINT = ShellCEntryLib
+
+[Sources]
+  UefiMainStdlib.c
+
+[Packages]
+  MdePkg/MdePkg.dec
+  OvmfPkg/OvmfPkg.dec
+  StdLib/StdLib.dec
+  ShellPkg/ShellPkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiBootServicesTableLib
+  UefiLib
+  PcdLib
+  MemoryAllocationLib
+  DebugLib
+# C Libs
+  LibC
+  LibCType
+  LibLocale
+  LibMath
+  LibSignal
+  LibStdio
+  LibStdLib
+  LibString
+  LibTime
+  LibUefi
+  LibWchar
+  LibGdtoa
+
+[Guids]
+
+[Ppis]
+
+[Protocols]
+
+[FeaturePcd]
+
+[Pcd]

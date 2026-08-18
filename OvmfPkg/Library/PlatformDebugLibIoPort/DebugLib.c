@@ -60,6 +60,13 @@ DebugPrint (
   VA_END (Marker);
 }
 
+
+#include <Uefi.h>
+
+#include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiLib.h>
+
+
 /**
   Prints a debug message to the debug output device if the specified
   error level is enabled base on Null-terminated format string and a
@@ -93,6 +100,11 @@ DebugPrintMarker (
   //
   ASSERT (Format != NULL);
 
+    // int one = ((ErrorLevel & GetDebugPrintErrorLevel ()) == 0) ;
+    //   int two =
+    //   (!PlatformDebugLibIoPortFound () && !MemDebugLogEnabled ());
+
+
   //
   // If the global mask disables this message OR the debug I/O port is not
   // present and Memory Debug Logging is disabled, there's nothing to do.
@@ -100,8 +112,13 @@ DebugPrintMarker (
   if (((ErrorLevel & GetDebugPrintErrorLevel ()) == 0) ||
       (!PlatformDebugLibIoPortFound () && !MemDebugLogEnabled ()))
   {
+
+
+    //Print(L"Baliling out: %d %d\r\n", one, two);
     return;
   }
+
+    //Print(L"Baliling in: %d %d\r\n", one, two);
 
   //
   // Convert the DEBUG() message to an ASCII String
