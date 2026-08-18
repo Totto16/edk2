@@ -46,7 +46,14 @@ int sdl2_main(void) {
         return 5;
     }
 
-    Uint64 freq = SDL_GetPerformanceFrequency();
+    const Uint64 freq = SDL_GetPerformanceFrequency();
+
+#if !defined(NDEBUG)
+    uint64_t start_time = SDL_GetPerformanceCounter();
+    uint64_t frame_counter = 0;
+    const uint64_t update_time = freq / 2; //0.5 s;
+    const double count_per_s = (double) freq;
+#endif
 
     SDL_Event event = {};
 
@@ -79,6 +86,21 @@ int sdl2_main(void) {
         SDL_RenderPresent(renderer);
 
 
+#if !defined(NDEBUG)
+        frame_counter++;
+
+        const Uint64 current_time = SDL_GetPerformanceCounter();
+
+        if (current_time - start_time >= update_time) {
+            const double elapsed = (double) (current_time - start_time) / count_per_s;
+
+
+            SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f", (double) (frame_counter) / elapsed);
+
+            start_time = current_time;
+            frame_counter = 0;
+        }
+#endif
         //TODO: use better timing and measure instead fo just using the fixed value
         SDL_Delay(1000 / FPS);
     }
