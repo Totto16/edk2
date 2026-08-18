@@ -30,6 +30,8 @@
   LibUefi
   LibWchar
   LibGdtoa
+#
+  TimerLib
 
 [BuildOptions]
   *_*_*_CC_FLAGS  = -std=c11

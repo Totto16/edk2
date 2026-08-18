@@ -55,8 +55,29 @@
   StackCheckLib|MdePkg/Library/StackCheckLib/StackCheckLib.inf
   StackCheckFailureHookLib|MdePkg/Library/StackCheckFailureHookLibNull/StackCheckFailureHookLibNull.inf
 
+  #TODO: TimerLib investigation
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLib.inf
+
+
 !include StdLib/StdLib.inc
 
+[LibraryClasses.common.SEC]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf
+
+[LibraryClasses.common.PEI_CORE]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf
+
+[LibraryClasses.common.PEIM]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf
+
+[LibraryClasses.common.DXE_RUNTIME_DRIVER]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
+
+[LibraryClasses.common.UEFI_DRIVER]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
+
+[LibraryClasses.common.DXE_DRIVER]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
 
 [LibraryClasses.common.UEFI_APPLICATION]
   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
@@ -77,6 +98,28 @@
   HiiLib|MdeModulePkg/Library/UefiHiiLib/UefiHiiLib.inf
 
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
+
+  ## only qemu!!!
+  ## NOT WORKING:
+
+  ## needs
+  #BaseLib
+  #PciLib
+  #IoLib
+  #HobLib
+
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
+  #TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLib.inf
+  #TimerLib|EmulatorPkg/Library/DxeTimerLib/DxeTimerLib.inf
+  #TODO
+  # TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
+
+
+[LibraryClasses.common.DXE_SMM_DRIVER]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
+
+[LibraryClasses.common.SMM_CORE]
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
 
 [Components]
   MyEfiAppSdl2/MyEfiAppSdl2.inf
