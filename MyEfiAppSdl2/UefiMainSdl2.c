@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "./Color.h"
 
 #include "SDL.h"
 
@@ -15,19 +16,32 @@ int sdl2_main(void) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
+    int result = SDL_Init(SDL_INIT_VIDEO);
 
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (result != 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
         return 3;
     }
 
-    SDL_Window* window;
-    SDL_Renderer* renderer;
 
-    if (SDL_CreateWindowAndRenderer(320, 240, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window and renderer: %s", SDL_GetError());
-        return 3;
+    SDL_Window* window = SDL_CreateWindow(
+            "This title is never shown", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_SHOWN
+    );
+
+    if (window == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create window: %s", SDL_GetError());
+        return 4;
     }
+
+
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+
+    if (renderer == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create renderer: %s", SDL_GetError());
+        return 5;
+    }
+
+    Uint64 freq = SDL_GetPerformanceFrequency();
 
     SDL_Event event = {};
 
@@ -36,9 +50,32 @@ int sdl2_main(void) {
         if (event.type == SDL_QUIT) {
             break;
         }
-        SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0x00);
+
+
+        Uint64 counter = SDL_GetPerformanceCounter();
+
+
+        hsv orig_color = (hsv){
+            .h = fmod((double) counter / (double) freq, 360.0),
+            .s = 1.0,
+            .v = 1.0,
+        };
+        rgb final_color = hsv2rgb(orig_color);
+
+        SDL_SetRenderDrawColor(
+                renderer, //
+                (Uint8) (final_color.r * 255.0), (Uint8) (final_color.g * 255.0), (Uint8) (final_color.b * 255.0), 0xFF
+        );
         SDL_RenderClear(renderer);
+
+        // flip buffers, write framebuffer to screen, doesn't use vsync
         SDL_RenderPresent(renderer);
+
+//TODO: use better timing and measure instead fo just using the fixed value
+// target 60 FPS
+#define FPS 60
+
+        SDL_Delay(1000 / FPS);
     }
 
     SDL_DestroyRenderer(renderer);

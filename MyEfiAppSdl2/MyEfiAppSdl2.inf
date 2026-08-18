@@ -8,6 +8,7 @@
 
 [Sources]
   UefiMainSdl2.c
+  Color.c
 
 [Packages]
   MdePkg/MdePkg.dec
