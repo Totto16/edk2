@@ -7,6 +7,8 @@
 #include <Library/TimerLib.h>
 #include <Uefi.h>
 
+#if defined(_OOPETRIS_SUPPORT_PKG_USE_TIMERLIB)
+
 static EFI_STATUS ClockGetTimeMonotonic(OUT struct timespec* Ts) {
     UINT64 Counter;
     UINT64 Start;
@@ -31,6 +33,18 @@ static EFI_STATUS ClockGetTimeMonotonic(OUT struct timespec* Ts) {
 
     return EFI_SUCCESS;
 }
+
+
+#else
+
+
+static EFI_STATUS ClockGetTimeMonotonic(OUT struct timespec* Ts) {
+    //TODO
+    return EFI_UNSUPPORTED;
+}
+
+
+#endif
 
 int clock_gettime(clockid_t clockid, struct timespec* tp) {
     switch (clockid) {

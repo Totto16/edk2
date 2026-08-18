@@ -30,6 +30,24 @@
   DEFINE DEBUG_ON_SERIAL_PORT = FALSE
   DEFINE DEBUG_TO_MEM = FALSE
 
+!ifndef OOPETRIS_RUNTIME_TARGET
+  !error "OOPETRIS_RUNTIME_TARGET must be set"
+!endif
+
+!if $(OOPETRIS_RUNTIME_TARGET) == "hardware"
+  DEFINE PLAT_QEMU               = FALSE
+  DEFINE QEMU_PV_VARS            = FALSE
+  DEFINE DEBUG_ON_SERIAL_PORT    = FALSE
+  DEFINE OOPETRIS_SUPPORT_FLAGS = -D_OOPETRIS_SUPPORT_PKG_USE_TIMERLIB
+!elseif $(OOPETRIS_RUNTIME_TARGET) == "emulator"
+  DEFINE PLAT_QEMU               = TRUE
+  DEFINE QEMU_PV_VARS            = FALSE
+  DEFINE DEBUG_ON_SERIAL_PORT    = TRUE
+  DEFINE OOPETRIS_SUPPORT_FLAGS = ""
+!else
+  !error "OOPETRIS_RUNTIME_TARGET has invalid value"
+!endif
+
 
 [Packages]
   MdePkg/MdePkg.dec
@@ -55,29 +73,10 @@
   StackCheckLib|MdePkg/Library/StackCheckLib/StackCheckLib.inf
   StackCheckFailureHookLib|MdePkg/Library/StackCheckFailureHookLibNull/StackCheckFailureHookLibNull.inf
 
-  #TODO: TimerLib investigation
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLib.inf
 
 
 !include StdLib/StdLib.inc
 
-[LibraryClasses.common.SEC]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf
-
-[LibraryClasses.common.PEI_CORE]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf
-
-[LibraryClasses.common.PEIM]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseRomAcpiTimerLib.inf
-
-[LibraryClasses.common.DXE_RUNTIME_DRIVER]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
-
-[LibraryClasses.common.UEFI_DRIVER]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
-
-[LibraryClasses.common.DXE_DRIVER]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
 
 [LibraryClasses.common.UEFI_APPLICATION]
   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
@@ -100,26 +99,19 @@
   SafeIntLib|MdePkg/Library/BaseSafeIntLib/BaseSafeIntLib.inf
 
   ## only qemu!!!
-  ## NOT WORKING:
-
-  ## needs
-  #BaseLib
-  #PciLib
-  #IoLib
-  #HobLib
-
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
-  #TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLib.inf
+  ## NOT WORKING need ovmf PEI to enable it:TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
+  ## not working: need special emulator?
   #TimerLib|EmulatorPkg/Library/DxeTimerLib/DxeTimerLib.inf
-  #TODO
-  # TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
+  #EmuThunkLib|EmulatorPkg/Library/DxeEmuLib/DxeEmuLib.inf
 
+!if $(OOPETRIS_RUNTIME_TARGET) == "hardware"
+  #TODO: doesn't work on qemu, but maybe on CPU??
+  TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
 
-[LibraryClasses.common.DXE_SMM_DRIVER]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
+!else
+  TimerLib|MdePkg/Library/BaseTimerLibNullTemplate/BaseTimerLibNullTemplate.inf
+!endif
 
-[LibraryClasses.common.SMM_CORE]
-  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
 
 [Components]
   MyEfiAppSdl2/MyEfiAppSdl2.inf
