@@ -14,7 +14,21 @@
 #include <Protocol/ShellParameters.h>
 
 #include <Library/ShellCEntryLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
+
 #include <Library/DebugLib.h>
+
+static void debug_return_status_to_string_shell_impl(INTN result){
+
+  if(!RETURN_ERROR(result)){
+     DEBUG ((DEBUG_INFO, "<C exit code>: %d", (UINT8)result));
+     return;
+  }
+
+  DEBUG ((DEBUG_INFO, "<EFI exit code>: %r", (EFI_STATUS)result));
+
+
+}
 
 /**
   UEFI entry point for an application that will in turn call the
@@ -89,10 +103,27 @@ ShellCEntryLibDynamical (
                          );
     } else {
       // this is the only difference to the normal (non Dynamical ShellCEntryLib)
-      ReturnFromMain = ShellAppMain (
-                         0,
-                         NULL
-                         );
+      DEBUG ((DEBUG_INFO, "Launching Shell app as UEFI start app: no arguments available\n"));
+
+      ReturnFromMain = ShellAppMain(0, NULL);
+
+      DEBUG ((DEBUG_INFO, "Shell app returned with: "));
+      debug_return_status_to_string_shell_impl(ReturnFromMain);
+      DEBUG ((DEBUG_INFO, "\n"));
+
+      DEBUG ((DEBUG_INFO, "Shutting down device\n"));
+
+      // shutdown device, as we have no shell to return
+      gRT->ResetSystem(
+        EfiResetShutdown,
+        ReturnFromMain,
+        0,
+        NULL
+      );
+
+      DEBUG ((DEBUG_ERROR, "ResetSystem did return ?!\n"));
+      ASSERT(FALSE);
+
     }
   }
 

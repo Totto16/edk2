@@ -29,6 +29,7 @@
 
 [LibraryClasses]
   UefiApplicationEntryPoint
+  UefiRuntimeServicesTableLib
   DebugLib
 
 

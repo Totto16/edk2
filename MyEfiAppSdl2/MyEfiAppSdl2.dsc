@@ -100,6 +100,8 @@
 
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x3F
 
+  # disable auto initialize, initialize manually, and if it fails, use backup non shell code backup
+  gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
 
 [Components]
   LibraryPkg/SDL2Pkg/SDL2Pkg.inf
