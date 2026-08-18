@@ -15,6 +15,8 @@
 // target 60 FPS
 #define FPS 60
 
+#define COLOR_PROGRESS_PER_SECOND 10.0
+
 int sdl2_main(void) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
@@ -57,10 +59,11 @@ int sdl2_main(void) {
 
         Uint64 counter = SDL_GetPerformanceCounter();
 
-        DEBUG((DEBUG_ERROR, "counter %llu\r\n", counter));
+        // fmod is slow on this platform, so try to use another method to get the same value, H is not that different in off by one cases
+        const double h = fmod(((double) counter / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
 
         hsv orig_color = (hsv){
-            .h = fmod((double) counter / (double) freq, 360.0),
+            .h = h,
             .s = 1.0,
             .v = 1.0,
         };
@@ -75,12 +78,9 @@ int sdl2_main(void) {
         // flip buffers, write framebuffer to screen, doesn't use vsync
         SDL_RenderPresent(renderer);
 
-        DEBUG((DEBUG_ERROR, "before SDL_Delay\r\n"));
 
         //TODO: use better timing and measure instead fo just using the fixed value
         SDL_Delay(1000 / FPS);
-
-        DEBUG((DEBUG_ERROR, "after SDL_Delay\r\n"));
     }
 
     SDL_DestroyRenderer(renderer);
