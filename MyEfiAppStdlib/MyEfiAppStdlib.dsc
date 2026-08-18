@@ -99,3 +99,6 @@
 #define DEBUG_PROPERTY_ASSERT_DEADLOOP_ENABLED    0x20
 
   gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x3F
+
+  # disable auto initialize, initialize manually, and if it fails, use backup non shell code backup
+  gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE

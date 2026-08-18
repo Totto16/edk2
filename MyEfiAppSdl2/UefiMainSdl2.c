@@ -13,6 +13,8 @@
 
 int sdl2_main(void) {
 
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
+
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
@@ -47,8 +49,8 @@ int sdl2_main(void) {
     return 0;
 }
 
-const CHAR16* EFIAPI bool_string(bool value) {
-    return value ? L"true" : L"false";
+const char* EFIAPI bool_string(bool value) {
+    return value ? "true" : "false";
 }
 
 /***
@@ -77,7 +79,7 @@ int main(IN int Argc, IN char** Argv) {
 
     bool debug_print_enabled = DebugPrintEnabled();
 
-    Print(L"Hello from UEFI!: plat_debug: %s debug: %s\r\n", bool_string(plat_detected),
+    Print(L"Hello from UEFI!: plat_debug: %a debug: %a\r\n", bool_string(plat_detected),
           bool_string(debug_print_enabled));
 
     // this should happend by some constructor of the lib "UefiBootServicesTableLib"
@@ -98,7 +100,7 @@ int main(IN int Argc, IN char** Argv) {
 
     DEBUG((DEBUG_WARN, "starting sdl2 example\r\n"));
     int result = sdl2_main();
-    DEBUG((DEBUG_ERROR, "\r\n\r\nSDL2 result: %d\r\n", result));
+    DEBUG((DEBUG_ERROR, "SDL2 result: %d\r\n", result));
 
     return result;
 }

@@ -6,8 +6,8 @@
 #include <Uefi.h>
 
 
-const CHAR16* EFIAPI bool_string(bool value) {
-    return value ? L"true" : L"false";
+const char* EFIAPI bool_string(bool value) {
+    return value ? "true" : "false";
 }
 
 EFI_STATUS
@@ -23,7 +23,7 @@ UefiMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE* SystemTable) {
 
     bool debug_print_enabled = DebugPrintEnabled();
 
-    Print(L"Hello from UEFI!: plat_debug: %s debug: %s\r\n", bool_string(plat_detected),
+    Print(L"Hello from UEFI!: plat_debug: %a debug: %a\r\n", bool_string(plat_detected),
           bool_string(debug_print_enabled));
 
     // this should happend by some constructor of the lib "UefiBootServicesTableLib"
