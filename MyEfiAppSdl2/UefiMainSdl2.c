@@ -12,6 +12,9 @@
 
 #include "SDL.h"
 
+// target 60 FPS
+#define FPS 60
+
 int sdl2_main(void) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
@@ -54,6 +57,7 @@ int sdl2_main(void) {
 
         Uint64 counter = SDL_GetPerformanceCounter();
 
+        DEBUG((DEBUG_ERROR, "counter %llu\r\n", counter));
 
         hsv orig_color = (hsv){
             .h = fmod((double) counter / (double) freq, 360.0),
@@ -71,11 +75,12 @@ int sdl2_main(void) {
         // flip buffers, write framebuffer to screen, doesn't use vsync
         SDL_RenderPresent(renderer);
 
-//TODO: use better timing and measure instead fo just using the fixed value
-// target 60 FPS
-#define FPS 60
+        DEBUG((DEBUG_ERROR, "before SDL_Delay\r\n"));
 
+        //TODO: use better timing and measure instead fo just using the fixed value
         SDL_Delay(1000 / FPS);
+
+        DEBUG((DEBUG_ERROR, "after SDL_Delay\r\n"));
     }
 
     SDL_DestroyRenderer(renderer);

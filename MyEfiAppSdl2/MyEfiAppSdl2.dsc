@@ -107,3 +107,5 @@
   LibraryPkg/SDL2Pkg/SDL2Pkg.inf
 
 !include LibraryPkg/SDL2Pkg/SDL2Pkg.inc
+
+!include LibraryPkg/SupportLib/SupportLib.inc
