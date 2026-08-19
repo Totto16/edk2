@@ -154,7 +154,7 @@ int sdl2_main(void) {
         const double h = FMOD((((double) counter) / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
 
         //TODO: the counter is so unprecise, it only counts seco9nds, implement Monotonic ticks better!
-        // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "h: %.2f counter: %.2f", h, ((double) counter));
+        SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "h: %.2f counter: %.2f", h, ((double) counter));
 
         hsv orig_color = (hsv){
             .h = h,

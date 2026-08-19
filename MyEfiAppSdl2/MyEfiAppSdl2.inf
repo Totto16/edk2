@@ -29,7 +29,7 @@
   ShellCEntryLibDynamical
 # C Libs
   LibC
-  LibCType
+  LibCtype
   LibLocale
   LibMath
   LibSignal
@@ -43,7 +43,8 @@
 #  sdl2
   LibSDL2
 # Support library (Common custom functionality)
-  LibUEfiSupport
+  LibUEfiSupportNanosleep
+  LibUEfiSupportClock
 
 
 [Guids]

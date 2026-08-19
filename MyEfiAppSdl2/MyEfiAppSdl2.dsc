@@ -107,7 +107,11 @@
   TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
   LibUEfiSupport|LibraryPkg/SupportLib/Library/TimerLib/SupportLibTimerImpl.inf
 !else
-  LibUEfiSupport|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultImpl.inf
+  LibUEfiSupportNanosleep|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultNanosleep.inf
+
+  #TimerLib|EmulatorPkg/Library/DxeTimerLib/DxeTimerLib.inf
+  TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
+  LibUEfiSupportClock|LibraryPkg/SupportLib/Library/TimerLib/SupportLibTimerClock.inf
 !endif
 
 

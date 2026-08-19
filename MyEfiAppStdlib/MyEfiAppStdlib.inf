@@ -26,7 +26,7 @@
   ShellCEntryLibDynamical
 # C Libs
   LibC
-  LibCType
+  LibCtype
   LibLocale
   LibMath
   LibSignal
