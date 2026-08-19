@@ -49,9 +49,9 @@
 
 [Packages]
   MdePkg/MdePkg.dec
+  UefiCpuPkg/UefiCpuPkg.dec
 
 #!include MdePkg/MdeLibs.dsc.inc
-
 
 [LibraryClasses]
   UefiApplicationEntryPoint|MdePkg/Library/UefiApplicationEntryPoint/UefiApplicationEntryPoint.inf
@@ -104,8 +104,8 @@
 !else
   LibUEfiSupportNanosleep|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultNanosleep.inf
 
-  #LibUEfiSupportClock|LibraryPkg/SupportLib/Library/TimerLib/SupportLibTimerClock.inf
-  LibUEfiSupportClock|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultClock.inf
+  LibUEfiSupportClock|LibraryPkg/SupportLib/Library/TimerLib/SupportLibTimerClock.inf
+  #LibUEfiSupportClock|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultClock.inf
   #LibUEfiSupportClock|LibraryPkg/SupportLib/Library/Null/SupportLibNullClock.inf
 
   ## doesn't work on qemu, setup (cpuid leaf 0x15) error
@@ -114,11 +114,14 @@
   ## not supported for DXE or UEFI_APPLICATION:
   ## TimerLib|OvmfPkg/Library/AcpiTimerLib/BaseAcpiTimerLib.inf
 
-  ## NOT WORKING need ovmf PEI to enable it? qemu at least reports wrong performancecounter
+  ## NOT WORKING on some machines, works with q35, but not the default (pc?),
+  ## the reason is Pmba reading is incorrect in the timerlib Constructor :(
   ## TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
 
   ## not working: need special emulator?
   ## TimerLib|EmulatorPkg/Library/DxeTimerLib/DxeTimerLib.inf
+
+  TimerLib|OvmfPkg/Library/AcpiTimerLib/DxeAcpiTimerLib.inf
 
 !endif
 
@@ -153,71 +156,13 @@
 
 !else
 
-## Defines the ACPI register set base address.
-  #  The invalid 0xFFFF is as its default value. It must be configured to the real value.
-  # @Prompt ACPI Timer IO Port Address
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoPortBaseAddress         |0x0400
-
-  ## Defines the PCI Bus Number of the PCI device that contains the BAR and Enable for ACPI hardware registers.
-  # @Prompt ACPI Hardware PCI Bus Number
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoPciBusNumber            |  0x00
-
-  ## Defines the PCI Device Number of the PCI device that contains the BAR and Enable for ACPI hardware registers.
-  #  The invalid 0xFF is as its default value. It must be configured to the real value.
-  # @Prompt ACPI Hardware PCI Device Number
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoPciDeviceNumber         |  0x1F
-
-  ## Defines the PCI Function Number of the PCI device that contains the BAR and Enable for ACPI hardware registers.
-  #  The invalid 0xFF is as its default value. It must be configured to the real value.
-  # @Prompt ACPI Hardware PCI Function Number
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoPciFunctionNumber       |  0x00
-
-  ## Defines the PCI Register Offset of the PCI device that contains the Enable for ACPI hardware registers.
-  #  The invalid 0xFFFF is as its default value. It must be configured to the real value.
-  # @Prompt ACPI Hardware PCI Register Offset
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoPciEnableRegisterOffset |0x0044
-
-  ## Defines the bit mask that must be set to enable the APIC hardware register BAR.
-  # @Prompt ACPI Hardware PCI Bar Enable BitMask
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoBarEnableMask           |  0x00
-
-  ## Defines the PCI Register Offset of the PCI device that contains the BAR for ACPI hardware registers.
-  #  The invalid 0xFFFF is as its default value. It must be configured to the real value.
-  # @Prompt ACPI Hardware PCI Bar Register Offset
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoPciBarRegisterOffset    |0x0040
-
-  ## Defines the offset to the 32-bit Timer Value register that resides within the ACPI BAR.
-  # @Prompt Offset to 32-bit Timer register in ACPI BAR
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiPm1TmrOffset              |0x0008
-
-  ## Defines the bit mask to retrieve ACPI IO Port Base Address
-  # @Prompt ACPI IO Port Base Address Mask
-  gPcAtChipsetPkgTokenSpaceGuid.PcdAcpiIoPortBaseAddressMask     |0xFFFE
-
-  ## Reset Control Register address in I/O space.
-  # @Prompt Reset Control Register address
-  ##NOT USED: gPcAtChipsetPkgTokenSpaceGuid.PcdResetControlRegister|0x64|UINT64|0x00000019
-
-  ## 8bit Reset Control Register value for cold reset.
-  # @Prompt Reset Control Register value for cold reset
-  ##NOT USED: gPcAtChipsetPkgTokenSpaceGuid.PcdResetControlValueColdReset|0xFE|UINT8|0x0000001A
-
-  ## Specifies the initial value for Register_A in RTC.
-  # @Prompt Initial value for Register_A in RTC.
-  ##NOT USED: gPcAtChipsetPkgTokenSpaceGuid.PcdInitialValueRtcRegisterA|0x26|UINT8|0x0000001B
-
-  ## Specifies the initial value for Register_B in RTC.
-  # @Prompt Initial value for Register_B in RTC.
-  ##NOT USED: gPcAtChipsetPkgTokenSpaceGuid.PcdInitialValueRtcRegisterB|0x02|UINT8|0x0000001C
-
-  ## Specifies the initial value for Register_D in RTC.
-  # @Prompt Initial value for Register_D in RTC.
-  ##NOT USED: gPcAtChipsetPkgTokenSpaceGuid.PcdInitialValueRtcRegisterD|0x00|UINT8|0x0000001D
-
-  ## RTC Update Timeout Value(microsecond).
-  # @Prompt RTC Update Timeout Value.
-  ##NOT USED: gPcAtChipsetPkgTokenSpaceGuid.PcdRealTimeClockUpdateTimeout|100000|UINT32|0x00000020
-
+  ## Specifies CPUID Leaf 0x15 Time Stamp Counter and Nominal Core Crystal Clock Frequency.
+  # TSC Frequency = ECX (core crystal clock frequency) * EBX/EAX.
+  #   Intel Xeon Processor Scalable Family with CPUID signature 06_55H = 25000000 (25MHz)
+  #   6th and 7th generation Intel Core processors and Intel Xeon W Processor Family = 24000000 (24MHz)
+  #   Intel Atom processors based on Goldmont Microarchitecture with CPUID signature 06_5CH = 19200000 (19.2MHz)
+  # @Prompt This PCD is the nominal frequency of the core crystal clock in Hz as is CPUID Leaf 0x15:ECX
+  gUefiCpuPkgTokenSpaceGuid.PcdCpuCoreCrystalClockFrequency|24000000
 
 !endif
 
