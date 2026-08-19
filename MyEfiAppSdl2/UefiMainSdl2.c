@@ -107,6 +107,7 @@ typedef struct {
     int dx;
     int dy;
     Uint64 freq;
+    Uint64 start_counter;
 } Sdl2RenderExample1Data;
 
 void Sdl2RenderExample1_reset_data(void* _data) {
@@ -120,6 +121,7 @@ void Sdl2RenderExample1_reset_data(void* _data) {
     data->dy = MOVEMENT_DY_EXAMPLE1;
 
     data->freq = SDL_GetPerformanceFrequency();
+    data->start_counter = SDL_GetPerformanceCounter();
 }
 
 
@@ -140,7 +142,9 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
 
     Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
 
-    Uint64 counter = SDL_GetPerformanceCounter();
+    Uint64 raw_counter = SDL_GetPerformanceCounter();
+
+    Uint64 counter = raw_counter - data->start_counter;
 
     const double h = fmod((((double) counter) / (double) data->freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
 
