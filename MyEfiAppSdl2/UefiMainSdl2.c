@@ -314,12 +314,15 @@ int sdl2_main(void) {
 
     SDL_Event event = {};
 
-    while (true) {
+    bool quit = false;
+
+    while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
 
             switch (event.type) {
                 case SDL_QUIT:
                     SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "Quitting");
+                    quit = true;
                     break;
                 case SDL_MOUSEMOTION:
                     // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_MOUSEMOTION event: %d", event.type);
@@ -345,6 +348,10 @@ int sdl2_main(void) {
                         }
                     } else if (key_event.keysym.sym == 'r') {
                         reset_mode_data(current_mode);
+                    } else if (key_event.keysym.sym == 27) {
+                        //ESC
+                        SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "ESC: Quitting");
+                        quit = true;
                     }
                     break;
                 case SDL_KEYUP:
@@ -359,9 +366,9 @@ int sdl2_main(void) {
             }
         }
 
-        bool quit = render_mode(current_mode, renderer);
-        if (quit) {
-            break;
+        bool render_quit = render_mode(current_mode, renderer);
+        if (render_quit) {
+            quit = true;
         }
 
 
