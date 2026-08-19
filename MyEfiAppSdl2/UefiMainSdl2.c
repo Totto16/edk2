@@ -7,6 +7,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "./Color.h"
 
@@ -78,6 +79,10 @@ static uint64_t get_sleep_time(uint64_t target_framerate) {
     return NANOSECONDS(1) / target_framerate;
 }
 
+static bool rand_bool(void) {
+    return (rand() & 0x01) != 0;
+}
+
 [[maybe_unused]] void displayFPS(SDL_Renderer* renderer, double fps) {
     //TODO: display it on the top corner
     SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f", fps);
@@ -117,8 +122,9 @@ void Sdl2RenderExample1_reset_data(void* _data) {
     data->rect = (SDL_Rect){ (SCREEN_WIDTH - RECT_HEIGHT_EXAMPLE1) / 2, (SCREEN_HEIGHT - RECT_HEIGHT_EXAMPLE1) / 2,
                              RECT_WIDTH_EXAMPLE1, RECT_HEIGHT_EXAMPLE1 };
 
-    data->dx = MOVEMENT_DX_EXAMPLE1;
-    data->dy = MOVEMENT_DY_EXAMPLE1;
+
+    data->dx = rand_bool() ? -MOVEMENT_DX_EXAMPLE1 : MOVEMENT_DX_EXAMPLE1;
+    data->dy = rand_bool() ? -MOVEMENT_DY_EXAMPLE1 : MOVEMENT_DY_EXAMPLE1;
 
     data->freq = SDL_GetPerformanceFrequency();
     data->start_counter = SDL_GetPerformanceCounter();
@@ -209,6 +215,8 @@ static Sdl2RenderExampleMode modes[] = {
 
 SDL_COMPILE_TIME_ASSERT(modes, SDL_arraysize(modes) == MODES_SIZE);
 
+static uint8_t current_mode_idx = 0;
+
 Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
 
     ASSERT(idx >= 0 && idx < MODES_SIZE);
@@ -224,6 +232,8 @@ Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
     mode->data = mode->init_data();
 
     ASSERT(mode->data != NULL);
+
+    current_mode_idx = idx;
 
     return mode;
 }
@@ -255,6 +265,8 @@ bool reset_mode_data(Sdl2RenderExampleMode* mode) {
 
 
 int sdl2_main(void) {
+
+    srand(time(NULL));
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
@@ -327,7 +339,7 @@ int sdl2_main(void) {
                     if (key_event.keysym.sym >= '0' && key_event.keysym.sym <= '9') {
                         uint8_t mode_idx = key_event.keysym.sym - '0';
 
-                        if (mode_idx >= 0 && mode_idx < MODES_SIZE) {
+                        if (mode_idx >= 0 && mode_idx < MODES_SIZE && current_mode_idx != mode_idx) {
                             reset_mode(current_mode);
                             current_mode = setup_mode(mode_idx);
                         }
