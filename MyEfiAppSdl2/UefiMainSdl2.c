@@ -85,11 +85,14 @@ static uint64_t get_sleep_time(uint64_t target_framerate) {
 
 typedef void* (*Sdl2RenderExampleModeInitData)();
 
+typedef void (*Sdl2RenderExampleModeResetData)(void*);
+
 typedef bool (*Sdl2RenderExampleModeRender)(SDL_Renderer* renderer, void* data);
 
 typedef struct {
     void* data;
     Sdl2RenderExampleModeInitData init_data;
+    Sdl2RenderExampleModeResetData reset_data;
     Sdl2RenderExampleModeRender render;
 } Sdl2RenderExampleMode;
 
@@ -106,13 +109,8 @@ typedef struct {
     Uint64 freq;
 } Sdl2RenderExample1Data;
 
-void* Sdl2RenderExample1_init_data(void) {
-
-    Sdl2RenderExample1Data* data = SDL_malloc(sizeof(Sdl2RenderExample1Data));
-
-    if (data == NULL) {
-        return NULL;
-    }
+void Sdl2RenderExample1_reset_data(void* _data) {
+    Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
 
 
     data->rect = (SDL_Rect){ (SCREEN_WIDTH - RECT_HEIGHT_EXAMPLE1) / 2, (SCREEN_HEIGHT - RECT_HEIGHT_EXAMPLE1) / 2,
@@ -122,6 +120,18 @@ void* Sdl2RenderExample1_init_data(void) {
     data->dy = MOVEMENT_DY_EXAMPLE1;
 
     data->freq = SDL_GetPerformanceFrequency();
+}
+
+
+void* Sdl2RenderExample1_init_data(void) {
+
+    Sdl2RenderExample1Data* data = SDL_malloc(sizeof(Sdl2RenderExample1Data));
+
+    if (data == NULL) {
+        return NULL;
+    }
+
+    Sdl2RenderExample1_reset_data(data);
 
     return data;
 }
@@ -188,6 +198,7 @@ static Sdl2RenderExampleMode modes[] = {
     (Sdl2RenderExampleMode){
                             .data = NULL,
                             .init_data = Sdl2RenderExample1_init_data,
+                            .reset_data = Sdl2RenderExample1_reset_data,
                             .render = Sdl2RenderExample1_render,
                             }
 };
@@ -201,6 +212,10 @@ Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
     Sdl2RenderExampleMode* mode = &(modes[idx]);
 
     ASSERT(mode->data == NULL);
+
+    ASSERT(mode->init_data != NULL);
+    ASSERT(mode->render != NULL);
+    // reset_data might be NULL
 
     mode->data = mode->init_data();
 
@@ -222,6 +237,16 @@ bool render_mode(Sdl2RenderExampleMode* mode, SDL_Renderer* renderer) {
     ASSERT(mode->data != NULL);
 
     return mode->render(renderer, mode->data);
+}
+
+bool reset_mode_data(Sdl2RenderExampleMode* mode) {
+
+    if (mode->reset_data == NULL) {
+        return false;
+    }
+
+    mode->reset_data(mode->data);
+    return true;
 }
 
 
@@ -302,6 +327,8 @@ int sdl2_main(void) {
                             reset_mode(current_mode);
                             current_mode = setup_mode(mode_idx);
                         }
+                    } else if (key_event.keysym.sym == 'r') {
+                        reset_mode_data(current_mode);
                     }
                     break;
                 case SDL_KEYUP:
