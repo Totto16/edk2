@@ -204,7 +204,7 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
 } */
 
 #define MODES_SIZE 1
-static Sdl2RenderExampleMode modes[] = {
+static Sdl2RenderExampleMode g_modes[] = {
     (Sdl2RenderExampleMode){
                             .data = NULL,
                             .init_data = Sdl2RenderExample1_init_data,
@@ -213,15 +213,15 @@ static Sdl2RenderExampleMode modes[] = {
                             }
 };
 
-SDL_COMPILE_TIME_ASSERT(modes, SDL_arraysize(modes) == MODES_SIZE);
+SDL_COMPILE_TIME_ASSERT(g_modes, SDL_arraysize(g_modes) == MODES_SIZE);
 
-static uint8_t current_mode_idx = 0;
+static uint8_t g_current_mode_idx = 0;
 
 Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
 
     ASSERT(idx >= 0 && idx < MODES_SIZE);
 
-    Sdl2RenderExampleMode* mode = &(modes[idx]);
+    Sdl2RenderExampleMode* mode = &(g_modes[idx]);
 
     ASSERT(mode->data == NULL);
 
@@ -233,7 +233,7 @@ Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
 
     ASSERT(mode->data != NULL);
 
-    current_mode_idx = idx;
+    g_current_mode_idx = idx;
 
     return mode;
 }
@@ -339,7 +339,7 @@ int sdl2_main(void) {
                     if (key_event.keysym.sym >= '0' && key_event.keysym.sym <= '9') {
                         uint8_t mode_idx = key_event.keysym.sym - '0';
 
-                        if (mode_idx >= 0 && mode_idx < MODES_SIZE && current_mode_idx != mode_idx) {
+                        if (mode_idx >= 0 && mode_idx < MODES_SIZE && g_current_mode_idx != mode_idx) {
                             reset_mode(current_mode);
                             current_mode = setup_mode(mode_idx);
                         }
