@@ -16,9 +16,6 @@
 // -> unlimited => 0
 #define FPS 60
 
-#define MOVEMENT_DX 20
-#define MOVEMENT_DY 20
-
 #define NANOSECONDS(x) ((x) * 1000000000ULL)
 
 #define COLOR_PROGRESS_PER_SECOND 36.0
@@ -86,6 +83,148 @@ static uint64_t get_sleep_time(uint64_t target_framerate) {
     SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f", fps);
 }
 
+typedef void* (*Sdl2RenderExampleModeInitData)();
+
+typedef bool (*Sdl2RenderExampleModeRender)(SDL_Renderer* renderer, void* data);
+
+typedef struct {
+    void* data;
+    Sdl2RenderExampleModeInitData init_data;
+    Sdl2RenderExampleModeRender render;
+} Sdl2RenderExampleMode;
+
+#define RECT_WIDTH_EXAMPLE1 200
+#define RECT_HEIGHT_EXAMPLE1 100
+
+#define MOVEMENT_DX_EXAMPLE1 20
+#define MOVEMENT_DY_EXAMPLE1 20
+
+typedef struct {
+    SDL_Rect rect;
+    int dx;
+    int dy;
+    Uint64 freq;
+} Sdl2RenderExample1Data;
+
+void* Sdl2RenderExample1_init_data(void) {
+
+    Sdl2RenderExample1Data* data = SDL_malloc(sizeof(Sdl2RenderExample1Data));
+
+    if (data == NULL) {
+        return NULL;
+    }
+
+
+    data->rect = (SDL_Rect){ (SCREEN_WIDTH - RECT_HEIGHT_EXAMPLE1) / 2, (SCREEN_HEIGHT - RECT_HEIGHT_EXAMPLE1) / 2,
+                             RECT_WIDTH_EXAMPLE1, RECT_HEIGHT_EXAMPLE1 };
+
+    data->dx = MOVEMENT_DX_EXAMPLE1;
+    data->dy = MOVEMENT_DY_EXAMPLE1;
+
+    data->freq = SDL_GetPerformanceFrequency();
+
+    return data;
+}
+
+bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
+
+    Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
+
+    Uint64 counter = SDL_GetPerformanceCounter();
+
+    const double h = fmod((((double) counter) / (double) data->freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
+
+    hsv orig_color = (hsv){
+        .h = h,
+        .s = 1.0,
+        .v = 1.0,
+    };
+    rgb final_color = hsv2rgb(orig_color);
+
+    SDL_SetRenderDrawColor(
+            renderer, //
+            (Uint8) (final_color.r * 255.0), (Uint8) (final_color.g * 255.0), (Uint8) (final_color.b * 255.0), 0xFF
+    );
+    SDL_RenderClear(renderer);
+
+
+    data->rect.x += data->dx;
+    data->rect.y += data->dy;
+
+    // Bounce horizontally
+    if (data->rect.x <= 0 || data->rect.x + data->rect.w >= SCREEN_WIDTH) {
+        data->dx = -data->dx;
+    }
+
+    // Bounce vertically
+    if (data->rect.y <= 0 || data->rect.y + data->rect.h >= SCREEN_HEIGHT) {
+        data->dy = -data->dy;
+    }
+    hsv rect_orig_color = (hsv){
+        .h = fmod(h + 180.0, 360.0),
+        .s = 1.0,
+        .v = 1.0,
+    };
+    rgb final_rect_color = hsv2rgb(rect_orig_color);
+    SDL_SetRenderDrawColor(
+            renderer, (Uint8) (final_rect_color.r * 255.0), (Uint8) (final_rect_color.g * 255.0),
+            (Uint8) (final_rect_color.b * 255.0), 0xFF
+    );
+
+    SDL_RenderFillRect(renderer, &data->rect);
+
+    return false;
+}
+
+//TODO
+/* int b() {
+    // SDL_SetRenderDrawColor(renderer, 255 / 4, (255 / 4) * 2, (255 / 4) * 3, 0xFF);
+
+    // SDL_RenderFillRect(renderer, &rect);
+} */
+
+#define MODES_SIZE 1
+static Sdl2RenderExampleMode modes[] = {
+    (Sdl2RenderExampleMode){
+                            .data = NULL,
+                            .init_data = Sdl2RenderExample1_init_data,
+                            .render = Sdl2RenderExample1_render,
+                            }
+};
+
+SDL_COMPILE_TIME_ASSERT(modes, SDL_arraysize(modes) == MODES_SIZE);
+
+Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
+
+    ASSERT(idx >= 0 && idx < MODES_SIZE);
+
+    Sdl2RenderExampleMode* mode = &(modes[idx]);
+
+    ASSERT(mode->data == NULL);
+
+    mode->data = mode->init_data();
+
+    ASSERT(mode->data != NULL);
+
+    return mode;
+}
+
+void reset_mode(Sdl2RenderExampleMode* mode) {
+
+    ASSERT(mode->data != NULL);
+
+    SDL_free(mode->data);
+
+    mode->data = NULL;
+}
+
+bool render_mode(Sdl2RenderExampleMode* mode, SDL_Renderer* renderer) {
+    ASSERT(mode->data != NULL);
+
+    return mode->render(renderer, mode->data);
+}
+
+
 int sdl2_main(void) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
@@ -130,68 +269,57 @@ int sdl2_main(void) {
     const double count_per_s = (double) freq;
 #endif
 
-    const int RECT_WIDTH = 200;
-    const int RECT_HEIGHT = 100;
-
-    SDL_Rect rect = { (SCREEN_WIDTH - RECT_WIDTH) / 2, (SCREEN_HEIGHT - RECT_HEIGHT) / 2, RECT_WIDTH, RECT_HEIGHT };
-
-    int dx = MOVEMENT_DX;
-    int dy = MOVEMENT_DY;
+    Sdl2RenderExampleMode* current_mode = setup_mode(0);
 
     SDL_Event event = {};
 
     while (true) {
-        SDL_PollEvent(&event);
-        if (event.type == SDL_QUIT) {
+        while (SDL_PollEvent(&event) != 0) {
+
+            switch (event.type) {
+                case SDL_QUIT:
+                    SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "Quitting");
+                    break;
+                case SDL_MOUSEMOTION:
+                    // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_MOUSEMOTION event: %d", event.type);
+                    break;
+                case SDL_MOUSEWHEEL:
+                    //SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_MOUSEWHEEL event: %d", event.type);
+                    break;
+                case SDL_MOUSEBUTTONDOWN:
+                    // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_MOUSEBUTTONDOWN event: %d", event.type);
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_MOUSEBUTTONUP event: %d", event.type);
+                    break;
+                case SDL_KEYDOWN:
+                    SDL_KeyboardEvent key_event = event.key;
+                    //  SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_KEYDOWN event: %d", key_event.keysym.sym);
+                    if (key_event.keysym.sym >= '0' && key_event.keysym.sym <= '9') {
+                        uint8_t mode_idx = key_event.keysym.sym - '0';
+
+                        if (mode_idx >= 0 && mode_idx < MODES_SIZE) {
+                            reset_mode(current_mode);
+                            current_mode = setup_mode(mode_idx);
+                        }
+                    }
+                    break;
+                case SDL_KEYUP:
+                    //  SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_KEYUP event: %d", event.type);
+                    break;
+                case SDL_TEXTINPUT:
+                    //  SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_TEXTINPUT event: %d", event.type);
+                    break;
+                default:
+                    // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "Unkown SDL event: %d", event.type);
+                    break;
+            }
+        }
+
+        bool quit = render_mode(current_mode, renderer);
+        if (quit) {
             break;
         }
-
-
-        Uint64 counter = SDL_GetPerformanceCounter();
-
-        const double h = fmod((((double) counter) / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
-
-        hsv orig_color = (hsv){
-            .h = h,
-            .s = 1.0,
-            .v = 1.0,
-        };
-        rgb final_color = hsv2rgb(orig_color);
-
-        SDL_SetRenderDrawColor(
-                renderer, //
-                (Uint8) (final_color.r * 255.0), (Uint8) (final_color.g * 255.0), (Uint8) (final_color.b * 255.0), 0xFF
-        );
-        SDL_RenderClear(renderer);
-
-
-        rect.x += dx;
-        rect.y += dy;
-
-        // Bounce horizontally
-        if (rect.x <= 0 || rect.x + rect.w >= SCREEN_WIDTH) {
-            dx = -dx;
-        }
-
-        // Bounce vertically
-        if (rect.y <= 0 || rect.y + rect.h >= SCREEN_HEIGHT) {
-            dy = -dy;
-        }
-        hsv rect_orig_color = (hsv){
-            .h = fmod(h + 180.0, 360.0),
-            .s = 1.0,
-            .v = 1.0,
-        };
-        rgb final_rect_color = hsv2rgb(rect_orig_color);
-        SDL_SetRenderDrawColor(
-                renderer, (Uint8) (final_rect_color.r * 255.0), (Uint8) (final_rect_color.g * 255.0),
-                (Uint8) (final_rect_color.b * 255.0), 0xFF
-        );
-
-        SDL_RenderFillRect(renderer, &rect);
-        // SDL_SetRenderDrawColor(renderer, 255 / 4, (255 / 4) * 2, (255 / 4) * 3, 0xFF);
-
-        // SDL_RenderFillRect(renderer, &rect);
 
 
 #if !defined(NDEBUG)
@@ -226,6 +354,8 @@ int sdl2_main(void) {
             }
         }
     }
+
+    reset_mode(current_mode);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
