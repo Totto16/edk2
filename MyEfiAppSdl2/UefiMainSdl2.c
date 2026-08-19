@@ -15,7 +15,74 @@
 // target 60 FPS
 #define FPS 60
 
+#define MOVEMENT_DX 20
+#define MOVEMENT_DY 20
+
+#define NANOSECONDS(x) ((x) * 1000000000ULL)
+
 #define COLOR_PROGRESS_PER_SECOND 10.0
+
+[[maybe_unused]] static double fmod_fast(double in, double mod_num) {
+    //TODO: is it really that slow? and is this accurate enough?
+    // fmod is slow on this platform, so try to use another method to get the same value, H is not that different in off by one cases
+    return (double) (((uint64_t) in) % ((uint64_t) mod_num));
+}
+
+//#define FMOD fmod_fast
+#define FMOD fmod
+
+#include <UEfiTimeSupport.h>
+
+// C++ like functions
+
+#ifdef __cplusplus
+#error "TODO"
+#else
+
+#include <errno.h>
+
+static uint64_t std_chrono_steady_clock_now(void) {
+    struct timespec ts;
+    int res = clock_gettime(CLOCK_MONOTONIC, &ts);
+    ASSERT(res == 0);
+
+    uint64_t nanoseconds = (uint64_t) ts.tv_sec * NANOSECONDS(1) + ts.tv_nsec;
+
+    return nanoseconds;
+}
+
+static bool helper_sleep_nanoseconds(uint64_t nano_seconds) {
+    int result = 0;
+    struct timespec remaining = {};
+    struct timespec current = (struct timespec){
+        .tv_sec = nano_seconds / NANOSECONDS(1),
+        .tv_nsec = nano_seconds % NANOSECONDS(1),
+    };
+
+    do { // NOLINT(cppcoreguidelines-avoid-do-while)
+        result = nanosleep(&current, &remaining);
+
+        if (result == 0) {
+            return true;
+        }
+
+        if (errno != EINTR) {
+            return false;
+        }
+
+        current = remaining;
+    } while (true);
+}
+
+#endif
+
+
+static uint64_t get_sleep_time(uint64_t target_framerate) {
+    if (target_framerate == 0) {
+        return 0;
+    }
+    return NANOSECONDS(1) / target_framerate;
+}
 
 int sdl2_main(void) {
 
@@ -29,8 +96,12 @@ int sdl2_main(void) {
     }
 
 
+    const int SCREEN_WIDTH = 1280;
+    const int SCREEN_HEIGHT = 720;
+
     SDL_Window* window = SDL_CreateWindow(
-            "This title is never shown", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, SDL_WINDOW_SHOWN
+            "This title is never shown", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT,
+            SDL_WINDOW_SHOWN
     );
 
     if (window == NULL) {
@@ -48,12 +119,26 @@ int sdl2_main(void) {
 
     const Uint64 freq = SDL_GetPerformanceFrequency();
 
+    const uint64_t target_framerate = FPS;
+
+    const uint64_t sleep_time = get_sleep_time(target_framerate);
+
+    uint64_t start_execution_time = std_chrono_steady_clock_now();
+
 #if !defined(NDEBUG)
     uint64_t start_time = SDL_GetPerformanceCounter();
     uint64_t frame_counter = 0;
     const uint64_t update_time = freq / 2; //0.5 s;
     const double count_per_s = (double) freq;
 #endif
+
+    const int RECT_WIDTH = 200;
+    const int RECT_HEIGHT = 100;
+
+    SDL_Rect rect = { (SCREEN_WIDTH - RECT_WIDTH) / 2, (SCREEN_HEIGHT - RECT_HEIGHT) / 2, RECT_WIDTH, RECT_HEIGHT };
+
+    int dx = MOVEMENT_DX;
+    int dy = MOVEMENT_DY;
 
     SDL_Event event = {};
 
@@ -66,8 +151,10 @@ int sdl2_main(void) {
 
         Uint64 counter = SDL_GetPerformanceCounter();
 
-        // fmod is slow on this platform, so try to use another method to get the same value, H is not that different in off by one cases
-        const double h = fmod(((double) counter / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
+        const double h = FMOD((((double) counter) / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
+
+        //TODO: the counter is so unprecise, it only counts seco9nds, implement Monotonic ticks better!
+        // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "h: %.2f counter: %.2f", h, ((double) counter));
 
         hsv orig_color = (hsv){
             .h = h,
@@ -81,6 +168,35 @@ int sdl2_main(void) {
                 (Uint8) (final_color.r * 255.0), (Uint8) (final_color.g * 255.0), (Uint8) (final_color.b * 255.0), 0xFF
         );
         SDL_RenderClear(renderer);
+
+
+        rect.x += dx;
+        rect.y += dy;
+
+        // Bounce horizontally
+        if (rect.x <= 0 || rect.x + rect.w >= SCREEN_WIDTH) {
+            dx = -dx;
+        }
+
+        // Bounce vertically
+        if (rect.y <= 0 || rect.y + rect.h >= SCREEN_HEIGHT) {
+            dy = -dy;
+        }
+        hsv rect_orig_color = (hsv){
+            .h = fmod(h + 180.0, 360.0),
+            .s = 1.0,
+            .v = 1.0,
+        };
+        rgb final_rect_color = hsv2rgb(rect_orig_color);
+        SDL_SetRenderDrawColor(
+                renderer, (Uint8) (final_rect_color.r * 255.0), (Uint8) (final_rect_color.g * 255.0),
+                (Uint8) (final_rect_color.b * 255.0), 0xFF
+        );
+
+        SDL_RenderFillRect(renderer, &rect);
+        // SDL_SetRenderDrawColor(renderer, 255 / 4, (255 / 4) * 2, (255 / 4) * 3, 0xFF);
+
+        // SDL_RenderFillRect(renderer, &rect);
 
         // flip buffers, write framebuffer to screen, doesn't use vsync
         SDL_RenderPresent(renderer);
@@ -101,8 +217,21 @@ int sdl2_main(void) {
             frame_counter = 0;
         }
 #endif
-        //TODO: use better timing and measure instead fo just using the fixed value
-        SDL_Delay(1000 / FPS);
+
+        if (target_framerate != 0 && false) {
+
+            const uint64_t now = std_chrono_steady_clock_now();
+            const uint64_t runtime = (now - start_execution_time);
+
+            if (runtime < sleep_time) {
+                //TODO(totto): use SDL_DelayNS in sdl >= 3.0
+                bool sleep = helper_sleep_nanoseconds(sleep_time - runtime);
+                ASSERT(sleep);
+                start_execution_time = std_chrono_steady_clock_now();
+            } else {
+                start_execution_time = now;
+            }
+        }
     }
 
     SDL_DestroyRenderer(renderer);
