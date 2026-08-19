@@ -13,14 +13,14 @@
 #include "SDL.h"
 
 // target 60 FPS
-#define FPS 60
+#define FPS 0
 
 #define MOVEMENT_DX 20
 #define MOVEMENT_DY 20
 
 #define NANOSECONDS(x) ((x) * 1000000000ULL)
 
-#define COLOR_PROGRESS_PER_SECOND 10.0
+#define COLOR_PROGRESS_PER_SECOND 36.0
 
 [[maybe_unused]] static double fmod_fast(double in, double mod_num) {
     //TODO: is it really that slow? and is this accurate enough?
@@ -154,9 +154,6 @@ int sdl2_main(void) {
 
         const double h = FMOD((((double) counter) / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
 
-        //TODO: the counter is so unprecise, it only counts seco9nds, implement Monotonic ticks better!
-        SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "h: %.2f counter: %llu : freq: %llu", h, counter, freq);
-
         hsv orig_color = (hsv){
             .h = h,
             .s = 1.0,
@@ -212,14 +209,16 @@ int sdl2_main(void) {
             const double elapsed = (double) (current_time - start_time) / count_per_s;
 
 
-            SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f", (double) (frame_counter) / elapsed);
+            SDL_LogVerbose(
+                    SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f elapsed: %.2f", (double) (frame_counter) / elapsed, elapsed
+            );
 
             start_time = current_time;
             frame_counter = 0;
         }
 #endif
 
-        if (target_framerate != 0 && false) {
+        if (target_framerate != 0) {
 
             const uint64_t now = std_chrono_steady_clock_now();
             const uint64_t runtime = (now - start_execution_time);

@@ -152,19 +152,6 @@
   gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
 
 
-!if $(OOPETRIS_RUNTIME_TARGET) == "hardware"
-
-!else
-
-  ## Specifies CPUID Leaf 0x15 Time Stamp Counter and Nominal Core Crystal Clock Frequency.
-  # TSC Frequency = ECX (core crystal clock frequency) * EBX/EAX.
-  #   Intel Xeon Processor Scalable Family with CPUID signature 06_55H = 25000000 (25MHz)
-  #   6th and 7th generation Intel Core processors and Intel Xeon W Processor Family = 24000000 (24MHz)
-  #   Intel Atom processors based on Goldmont Microarchitecture with CPUID signature 06_5CH = 19200000 (19.2MHz)
-  # @Prompt This PCD is the nominal frequency of the core crystal clock in Hz as is CPUID Leaf 0x15:ECX
-  gUefiCpuPkgTokenSpaceGuid.PcdCpuCoreCrystalClockFrequency|24000000
-
-!endif
 
 [Components]
   LibraryPkg/SDL2Pkg/SDL2Pkg.inf
