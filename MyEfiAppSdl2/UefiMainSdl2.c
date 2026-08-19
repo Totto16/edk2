@@ -13,7 +13,8 @@
 #include "SDL.h"
 
 // target 60 FPS
-#define FPS 0
+// -> unlimited => 0
+#define FPS 60
 
 #define MOVEMENT_DX 20
 #define MOVEMENT_DY 20
@@ -22,14 +23,9 @@
 
 #define COLOR_PROGRESS_PER_SECOND 36.0
 
-[[maybe_unused]] static double fmod_fast(double in, double mod_num) {
-    //TODO: is it really that slow? and is this accurate enough?
-    // fmod is slow on this platform, so try to use another method to get the same value, H is not that different in off by one cases
-    return (double) (((uint64_t) in) % ((uint64_t) mod_num));
-}
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
 
-//#define FMOD fmod_fast
-#define FMOD fmod
 
 #include <UEfiTimeSupport.h>
 
@@ -85,6 +81,11 @@ static uint64_t get_sleep_time(uint64_t target_framerate) {
     return NANOSECONDS(1) / target_framerate;
 }
 
+[[maybe_unused]] void displayFPS(SDL_Renderer* renderer, double fps) {
+    //TODO: display it on the top corner
+    SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f", fps);
+}
+
 int sdl2_main(void) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
@@ -95,10 +96,6 @@ int sdl2_main(void) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't initialize SDL: %s", SDL_GetError());
         return 3;
     }
-
-
-    const int SCREEN_WIDTH = 1280;
-    const int SCREEN_HEIGHT = 720;
 
     SDL_Window* window = SDL_CreateWindow(
             "This title is never shown", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -152,7 +149,7 @@ int sdl2_main(void) {
 
         Uint64 counter = SDL_GetPerformanceCounter();
 
-        const double h = FMOD((((double) counter) / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
+        const double h = fmod((((double) counter) / (double) freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
 
         hsv orig_color = (hsv){
             .h = h,
@@ -196,9 +193,6 @@ int sdl2_main(void) {
 
         // SDL_RenderFillRect(renderer, &rect);
 
-        // flip buffers, write framebuffer to screen, doesn't use vsync
-        SDL_RenderPresent(renderer);
-
 
 #if !defined(NDEBUG)
         frame_counter++;
@@ -208,15 +202,14 @@ int sdl2_main(void) {
         if (current_time - start_time >= update_time) {
             const double elapsed = (double) (current_time - start_time) / count_per_s;
 
-
-            SDL_LogVerbose(
-                    SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f elapsed: %.2f", (double) (frame_counter) / elapsed, elapsed
-            );
+            displayFPS(renderer, (double) (frame_counter) / elapsed);
 
             start_time = current_time;
             frame_counter = 0;
         }
 #endif
+
+        SDL_RenderPresent(renderer);
 
         if (target_framerate != 0) {
 
