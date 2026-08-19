@@ -38,12 +38,10 @@
   DEFINE PLAT_QEMU               = FALSE
   DEFINE QEMU_PV_VARS            = FALSE
   DEFINE DEBUG_ON_SERIAL_PORT    = FALSE
-  DEFINE OOPETRIS_SUPPORT_FLAGS = -D_OOPETRIS_SUPPORT_PKG_USE_TIMERLIB
 !elseif $(OOPETRIS_RUNTIME_TARGET) == "emulator"
   DEFINE PLAT_QEMU               = TRUE
   DEFINE QEMU_PV_VARS            = FALSE
   DEFINE DEBUG_ON_SERIAL_PORT    = TRUE
-  DEFINE OOPETRIS_SUPPORT_FLAGS = ""
 !else
   !error "OOPETRIS_RUNTIME_TARGET has invalid value"
 !endif
@@ -107,9 +105,9 @@
 !if $(OOPETRIS_RUNTIME_TARGET) == "hardware"
   #TODO: doesn't work on qemu, but maybe on CPU??
   TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
-
+  LibUEfiSupport|LibraryPkg/SupportLib/Library/TimerLib/SupportLibTimerImpl.inf
 !else
-  TimerLib|MdePkg/Library/BaseTimerLibNullTemplate/BaseTimerLibNullTemplate.inf
+  LibUEfiSupport|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultImpl.inf
 !endif
 
 
@@ -143,4 +141,3 @@
 
 !include LibraryPkg/SDL2Pkg/SDL2Pkg.inc
 
-!include LibraryPkg/SupportLib/SupportLib.inc

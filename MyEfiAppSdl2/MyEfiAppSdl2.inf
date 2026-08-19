@@ -16,6 +16,7 @@
   StdLib/StdLib.dec
   ShellPkg/ShellPkg.dec
   LibraryPkg/SDL2Pkg/SDL2Pkg.dec
+  LibraryPkg/SupportLib/SupportLib.dec
 
 [LibraryClasses]
   UefiApplicationEntryPoint
@@ -41,6 +42,9 @@
   LibGdtoa
 #  sdl2
   LibSDL2
+# Support library (Common custom functionality)
+  LibUEfiSupport
+
 
 [Guids]
 
