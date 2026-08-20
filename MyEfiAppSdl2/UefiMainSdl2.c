@@ -166,7 +166,6 @@ typedef bool (*Sdl2RenderExampleModeRender)(SDL_Renderer* renderer, void* data);
 typedef struct {
     void* data;
     Sdl2RenderExampleModeInitData init_data;
-    Sdl2RenderExampleModeResetData reset_data;
     Sdl2RenderExampleModeDestroyData destroy_data;
     Sdl2RenderExampleModeRender render;
     Sdl2RenderExampleModeProcessKeyData process_key;
@@ -276,6 +275,18 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
 }
 
 
+bool Sdl2RenderExample1_process_key(void* _data, SDL_Keysym keysym) {
+    Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
+
+    if (keysym.sym == 'r') {
+        Sdl2RenderExample1_reset_data(data);
+        return true;
+    }
+
+    return false;
+}
+
+
 typedef enum {
     Sdl2RenderExample2ModeDefault = 0,
     Sdl2RenderExample2ModeOneColor,
@@ -376,8 +387,7 @@ bool Sdl2RenderExample2_process_key(void* _data, SDL_Keysym keysym) {
         data->mode = Sdl2RenderExample2ModeDefault;
         data->color = COLOR_WHITE;
         return true;
-    } else if (keysym.sym == 'e') {
-        // r is already used
+    } else if (keysym.sym == 'r') {
         data->mode = Sdl2RenderExample2ModeOneColor;
         data->color = COLOR_RED;
         return true;
@@ -393,8 +403,8 @@ bool Sdl2RenderExample2_process_key(void* _data, SDL_Keysym keysym) {
         data->mode = Sdl2RenderExample2ModeOneColor;
         data->color = COLOR_WHITE;
         return true;
-    } else if (keysym.sym == 'l') {
-        // b is already used
+    } else if (keysym.sym == 's') {
+        // b is already used, so use s (german "schwarz")
         data->mode = Sdl2RenderExample2ModeOneColor;
         data->color = COLOR_BLACK;
         return true;
@@ -409,15 +419,13 @@ static Sdl2RenderExampleMode g_modes[] = {
     (Sdl2RenderExampleMode){
                             .data = NULL,
                             .init_data = Sdl2RenderExample1_init_data,
-                            .reset_data = Sdl2RenderExample1_reset_data,
                             .destroy_data = Sdl2RenderExample1_destroy_data,
                             .render = Sdl2RenderExample1_render,
-                            .process_key = NULL,
+                            .process_key = Sdl2RenderExample1_process_key,
                             },
     (Sdl2RenderExampleMode){
                             .data = NULL,
                             .init_data = Sdl2RenderExample2_init_data,
-                            .reset_data = Sdl2RenderExample2_reset_data,
                             .destroy_data = Sdl2RenderExample2_destroy_data,
                             .render = Sdl2RenderExample2_render,
                             .process_key = Sdl2RenderExample2_process_key,
@@ -428,7 +436,7 @@ SDL_COMPILE_TIME_ASSERT(g_modes, SDL_arraysize(g_modes) == MODES_SIZE);
 
 static uint8_t g_current_mode_idx = 0;
 
-Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
+Sdl2RenderExampleMode* mode_setup(uint8_t idx) {
 
     ASSERT(idx >= 0 && idx < MODES_SIZE);
 
@@ -438,7 +446,6 @@ Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
 
     ASSERT(mode->init_data != NULL);
     ASSERT(mode->render != NULL);
-    // reset_data might be NULL
     ASSERT(mode->destroy_data != NULL);
     // process_key might be null
 
@@ -451,7 +458,7 @@ Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
     return mode;
 }
 
-void reset_mode(Sdl2RenderExampleMode* mode) {
+void mode_reset(Sdl2RenderExampleMode* mode) {
 
     ASSERT(mode->data != NULL);
 
@@ -459,23 +466,11 @@ void reset_mode(Sdl2RenderExampleMode* mode) {
 
     mode->data = NULL;
 }
-
-bool render_mode(Sdl2RenderExampleMode* mode, SDL_Renderer* renderer) {
+bool mode_render(Sdl2RenderExampleMode* mode, SDL_Renderer* renderer) {
     ASSERT(mode->data != NULL);
 
     return mode->render(renderer, mode->data);
 }
-
-bool reset_mode_data(Sdl2RenderExampleMode* mode) {
-
-    if (mode->reset_data == NULL) {
-        return false;
-    }
-
-    mode->reset_data(mode->data);
-    return true;
-}
-
 
 bool mode_process_key(Sdl2RenderExampleMode* mode, SDL_Keysym keysym) {
     if (mode->process_key == NULL) {
@@ -534,7 +529,7 @@ int sdl2_main(void) {
 
 #endif
 
-    Sdl2RenderExampleMode* current_mode = setup_mode(0);
+    Sdl2RenderExampleMode* current_mode = mode_setup(0);
 
     SDL_Event event = {};
 
@@ -567,11 +562,9 @@ int sdl2_main(void) {
                         uint8_t mode_idx = key_event.keysym.sym - '0';
 
                         if (mode_idx >= 0 && mode_idx < MODES_SIZE && g_current_mode_idx != mode_idx) {
-                            reset_mode(current_mode);
-                            current_mode = setup_mode(mode_idx);
+                            mode_reset(current_mode);
+                            current_mode = mode_setup(mode_idx);
                         }
-                    } else if (key_event.keysym.sym == 'r') {
-                        reset_mode_data(current_mode);
                     } else if (key_event.keysym.sym == 'f') {
                         shouldDisplayFps = !shouldDisplayFps;
                     } else if (key_event.keysym.sym == 27) {
@@ -594,7 +587,7 @@ int sdl2_main(void) {
             }
         }
 
-        bool render_quit = render_mode(current_mode, renderer);
+        bool render_quit = mode_render(current_mode, renderer);
         if (render_quit) {
             quit = true;
         }
@@ -636,7 +629,7 @@ int sdl2_main(void) {
         }
     }
 
-    reset_mode(current_mode);
+    mode_reset(current_mode);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
