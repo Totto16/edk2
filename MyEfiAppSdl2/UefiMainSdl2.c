@@ -13,10 +13,6 @@
 
 #include "SDL.h"
 
-// target 60 FPS
-// -> unlimited => 0
-#define FPS 60
-
 #define COLOR_PROGRESS_PER_SECOND 36.0
 
 #define SCREEN_WIDTH 1280
@@ -73,11 +69,24 @@ static bool helper_sleep_nanoseconds(uint64_t nano_seconds) {
 #endif
 
 
-static uint64_t get_sleep_time(uint64_t target_framerate) {
+static uint64_t get_sleep_time_ns(uint64_t target_framerate) {
     if (target_framerate == 0) {
         return 0;
     }
     return NANOSECONDS(1) / target_framerate;
+}
+
+typedef struct {
+    uint64_t framerate;
+    uint64_t sleep_time_ns;
+} FPSSetting;
+
+FPSSetting init_fps_setting(uint64_t fps) {
+
+    return (FPSSetting){
+        .framerate = fps,
+        .sleep_time_ns = get_sleep_time_ns(fps),
+    };
 }
 
 static bool rand_bool(void) {
@@ -125,7 +134,7 @@ void font_8x8_draw_text(SDL_Renderer* renderer, const char* text, int x, int y, 
     }
 }
 
-static double gFps = 0;
+static double gMeasuredFps = 0;
 
 [[maybe_unused]] void displayFPS(SDL_Renderer* renderer) {
 
@@ -133,7 +142,7 @@ static double gFps = 0;
 
     static char fps_buffer[FPS_BUFFER_SIZE];
 
-    int res = SDL_snprintf(fps_buffer, FPS_BUFFER_SIZE, "FPS: %.2f", gFps);
+    int res = SDL_snprintf(fps_buffer, FPS_BUFFER_SIZE, "FPS: %.2f", gMeasuredFps);
     ASSERT(res > 0 && res <= FPS_BUFFER_SIZE);
 
     int text_size = SDL_strlen(fps_buffer);
@@ -252,14 +261,20 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
     data->rect.y += (int) (data->dy * dt);
 
     // Bounce horizontally
-    if (data->rect.x <= 0 || data->rect.x + data->rect.w >= SCREEN_WIDTH) {
-        data->dx = -data->dx;
+    if (data->rect.x <= 0) {
+        data->dx = MOVEMENT_PER_SECOND_DX_EXAMPLE1;
+    } else if (data->rect.x + data->rect.w >= SCREEN_WIDTH) {
+        data->dx = -MOVEMENT_PER_SECOND_DX_EXAMPLE1;
     }
 
+
     // Bounce vertically
-    if (data->rect.y <= 0 || data->rect.y + data->rect.h >= SCREEN_HEIGHT) {
-        data->dy = -data->dy;
+    if (data->rect.y <= 0) {
+        data->dy = MOVEMENT_PER_SECOND_DY_EXAMPLE1;
+    } else if (data->rect.y + data->rect.h >= SCREEN_HEIGHT) {
+        data->dy = -MOVEMENT_PER_SECOND_DY_EXAMPLE1;
     }
+
     hsv rect_orig_color = (hsv){
         .h = fmod(h + 180.0, 360.0),
         .s = 1.0,
@@ -480,6 +495,9 @@ bool mode_process_key(Sdl2RenderExampleMode* mode, SDL_Keysym keysym) {
     return mode->process_key(mode->data, keysym);
 }
 
+#define FPS_STEP 5
+
+
 int sdl2_main(void) {
 
     srand(time(NULL));
@@ -513,10 +531,6 @@ int sdl2_main(void) {
 
     const Uint64 freq = SDL_GetPerformanceFrequency();
 
-    const uint64_t target_framerate = FPS;
-
-    const uint64_t sleep_time = get_sleep_time(target_framerate);
-
     uint64_t start_execution_time = std_chrono_steady_clock_now();
     double dt = 0.0;
 
@@ -531,6 +545,9 @@ int sdl2_main(void) {
 #endif
 
     Sdl2RenderExampleMode* current_mode = mode_setup(0);
+
+    // start with 60 FPS
+    FPSSetting fps_setting = init_fps_setting(60);
 
     SDL_Event event = {};
 
@@ -558,15 +575,33 @@ int sdl2_main(void) {
                     break;
                 case SDL_KEYDOWN:
                     SDL_KeyboardEvent key_event = event.key;
-                    //  SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_KEYDOWN event: %d", key_event.keysym.sym);
-                    if (key_event.keysym.sym >= '0' && key_event.keysym.sym <= '9') {
-                        uint8_t mode_idx = key_event.keysym.sym - '0';
+                    /*   SDL_LogVerbose(
+                            SDL_LOG_CATEGORY_APPLICATION, "SDL_KEYDOWN event: %d %c", key_event.keysym.sym,
+                            key_event.keysym.sym
+                    ); */
+                    if (key_event.keysym.sym >= '1' && key_event.keysym.sym <= '9') {
+                        // choose mode 0-MODES_SIZE with 1-9
+                        uint8_t mode_idx = key_event.keysym.sym - '1';
 
                         if (mode_idx >= 0 && mode_idx < MODES_SIZE && g_current_mode_idx != mode_idx) {
                             mode_reset(current_mode);
                             current_mode = mode_setup(mode_idx);
                         }
+                    } else if (key_event.keysym.sym == '0') {
+                        // set unlimited fps
+                        fps_setting = init_fps_setting(0);
+                    } else if (key_event.keysym.sym == 'p') {
+                        //using p instead of +, as + is not the same on eng and german keyboards
+                        // increase the fps cap by FPS_STEP
+                        fps_setting = init_fps_setting(fps_setting.framerate + FPS_STEP);
+                    } else if (key_event.keysym.sym == 'm') {
+                        //using m instead of -, as - is not the same on eng and german keyboards
+                        // decrease the fps cap by FPS_STEP, minimum is 1
+                        fps_setting = init_fps_setting(
+                                fps_setting.framerate > FPS_STEP ? fps_setting.framerate - FPS_STEP : 1
+                        );
                     } else if (key_event.keysym.sym == 'f') {
+                        // show or hide the fps display
                         shouldDisplayFps = !shouldDisplayFps;
                     } else if (key_event.keysym.sym == 27) {
                         //ESC
@@ -603,7 +638,7 @@ int sdl2_main(void) {
         if (current_time - start_time >= update_time) {
             const double elapsed = (double) (current_time - start_time) / count_per_s;
 
-            gFps = (double) (frame_counter) / elapsed;
+            gMeasuredFps = (double) (frame_counter) / elapsed;
 
             start_time = current_time;
             frame_counter = 0;
@@ -621,8 +656,8 @@ int sdl2_main(void) {
         const uint64_t runtime = now - start_execution_time;
 
 
-        if (target_framerate != 0 && runtime < sleep_time) {
-            bool sleep = helper_sleep_nanoseconds(sleep_time - runtime);
+        if (fps_setting.framerate != 0 && runtime < fps_setting.sleep_time_ns) {
+            bool sleep = helper_sleep_nanoseconds(fps_setting.sleep_time_ns - runtime);
             ASSERT(sleep);
 
 
