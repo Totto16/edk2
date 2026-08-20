@@ -137,15 +137,19 @@ static double gFps = 0;
 
     int text_size = SDL_strlen(fps_buffer);
 
-    const uint32_t character_scale = (SDL_max(SCREEN_WIDTH / 50, SCREEN_HEIGHT / 10) / 8);
+    const uint32_t character_scale = SDL_max(SCREEN_WIDTH / 50, SCREEN_HEIGHT / 20) / 8;
 
-    SDL_Rect text_box = { 0, 0, text_size * character_scale * 8, character_scale * 8 };
+    SDL_Rect text_box = { 0, 0, (2 * character_scale) + (text_size * character_scale * 8),
+                          (2 * character_scale) + (character_scale * 8) };
 
     SDL_SetRenderDrawColorC(renderer, COLOR_BLACK);
 
     SDL_RenderFillRect(renderer, &text_box);
 
-    font_8x8_draw_text(renderer, fps_buffer, text_box.x, text_box.y, character_scale, COLOR_WHITE);
+    font_8x8_draw_text(
+            renderer, fps_buffer, text_box.x + character_scale, text_box.y + character_scale, character_scale,
+            COLOR_WHITE
+    );
     //
 }
 
