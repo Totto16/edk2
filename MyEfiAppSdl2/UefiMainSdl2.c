@@ -17,8 +17,6 @@
 // -> unlimited => 0
 #define FPS 60
 
-#define NANOSECONDS(x) ((x) * 1000000000ULL)
-
 #define COLOR_PROGRESS_PER_SECOND 36.0
 
 #define SCREEN_WIDTH 1280
@@ -30,18 +28,20 @@
 // C++ like functions
 
 #ifdef __cplusplus
-#error "Not supported, as this is a c application"
+#error "Not supported, as this is a C application"
 #else
 
 #include <errno.h>
 
+#define NANOSECONDS(x) ((x) * 1000000000ULL)
+
+
 static uint64_t std_chrono_steady_clock_now(void) {
-    return 0;
     struct timespec ts;
     int res = clock_gettime(CLOCK_MONOTONIC, &ts);
     ASSERT(res == 0);
 
-    uint64_t nanoseconds = (uint64_t) ts.tv_sec * NANOSECONDS(1) + ts.tv_nsec;
+    uint64_t nanoseconds = (((uint64_t) ts.tv_sec) * NANOSECONDS(1)) + ts.tv_nsec;
 
     return nanoseconds;
 }
@@ -64,6 +64,7 @@ static bool helper_sleep_nanoseconds(uint64_t nano_seconds) {
         if (errno != EINTR) {
             return false;
         }
+
 
         current = remaining;
     } while (true);
@@ -161,7 +162,7 @@ typedef void (*Sdl2RenderExampleModeDestroyData)(void*);
 
 typedef bool (*Sdl2RenderExampleModeProcessKeyData)(void*, SDL_Keysym keysm);
 
-typedef bool (*Sdl2RenderExampleModeRender)(SDL_Renderer* renderer, void* data);
+typedef bool (*Sdl2RenderExampleModeRender)(SDL_Renderer* renderer, double dt, void* data);
 
 typedef struct {
     void* data;
@@ -174,13 +175,13 @@ typedef struct {
 #define RECT_WIDTH_EXAMPLE1 200
 #define RECT_HEIGHT_EXAMPLE1 100
 
-#define MOVEMENT_DX_EXAMPLE1 20
-#define MOVEMENT_DY_EXAMPLE1 20
+#define MOVEMENT_PER_SECOND_DX_EXAMPLE1 400.0
+#define MOVEMENT_PER_SECOND_DY_EXAMPLE1 400.0
 
 typedef struct {
     SDL_Rect rect;
-    int dx;
-    int dy;
+    double dx;
+    double dy;
     Uint64 freq;
     Uint64 start_counter;
 } Sdl2RenderExample1Data;
@@ -193,8 +194,8 @@ void Sdl2RenderExample1_reset_data(void* _data) {
                              RECT_WIDTH_EXAMPLE1, RECT_HEIGHT_EXAMPLE1 };
 
 
-    data->dx = rand_bool() ? -MOVEMENT_DX_EXAMPLE1 : MOVEMENT_DX_EXAMPLE1;
-    data->dy = rand_bool() ? -MOVEMENT_DY_EXAMPLE1 : MOVEMENT_DY_EXAMPLE1;
+    data->dx = rand_bool() ? -MOVEMENT_PER_SECOND_DX_EXAMPLE1 : MOVEMENT_PER_SECOND_DX_EXAMPLE1;
+    data->dy = rand_bool() ? -MOVEMENT_PER_SECOND_DY_EXAMPLE1 : MOVEMENT_PER_SECOND_DY_EXAMPLE1;
 
     data->freq = SDL_GetPerformanceFrequency();
     data->start_counter = SDL_GetPerformanceCounter();
@@ -227,7 +228,7 @@ static SDL_Color rgb_to_sdl_color(rgb color) {
 }
 
 
-bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
+bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
 
     Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
 
@@ -247,9 +248,8 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
     SDL_SetRenderDrawColorC(renderer, rgb_to_sdl_color(final_color));
     SDL_RenderClear(renderer);
 
-
-    data->rect.x += data->dx;
-    data->rect.y += data->dy;
+    data->rect.x += (int) (data->dx * dt);
+    data->rect.y += (int) (data->dy * dt);
 
     // Bounce horizontally
     if (data->rect.x <= 0 || data->rect.x + data->rect.w >= SCREEN_WIDTH) {
@@ -326,7 +326,7 @@ void Sdl2RenderExample2_destroy_data(void* _data) {
 }
 
 
-bool Sdl2RenderExample2_render(SDL_Renderer* renderer, void* _data) {
+bool Sdl2RenderExample2_render(SDL_Renderer* renderer, double dt, void* _data) {
 
     Sdl2RenderExample2Data* data = (Sdl2RenderExample2Data*) _data;
 
@@ -466,10 +466,10 @@ void mode_reset(Sdl2RenderExampleMode* mode) {
 
     mode->data = NULL;
 }
-bool mode_render(Sdl2RenderExampleMode* mode, SDL_Renderer* renderer) {
+bool mode_render(Sdl2RenderExampleMode* mode, double dt, SDL_Renderer* renderer) {
     ASSERT(mode->data != NULL);
 
-    return mode->render(renderer, mode->data);
+    return mode->render(renderer, dt, mode->data);
 }
 
 bool mode_process_key(Sdl2RenderExampleMode* mode, SDL_Keysym keysym) {
@@ -518,6 +518,7 @@ int sdl2_main(void) {
     const uint64_t sleep_time = get_sleep_time(target_framerate);
 
     uint64_t start_execution_time = std_chrono_steady_clock_now();
+    double dt = 0.0;
 
 #if !defined(NDEBUG)
     uint64_t start_time = SDL_GetPerformanceCounter();
@@ -587,7 +588,8 @@ int sdl2_main(void) {
             }
         }
 
-        bool render_quit = mode_render(current_mode, renderer);
+
+        bool render_quit = mode_render(current_mode, dt, renderer);
         if (render_quit) {
             quit = true;
         }
@@ -614,18 +616,29 @@ int sdl2_main(void) {
 
         SDL_RenderPresent(renderer);
 
-        if (target_framerate != 0) {
 
-            const uint64_t now = std_chrono_steady_clock_now();
-            const uint64_t runtime = (now - start_execution_time);
+        const uint64_t now = std_chrono_steady_clock_now();
+        const uint64_t runtime = now - start_execution_time;
 
-            if (runtime < sleep_time) {
-                bool sleep = helper_sleep_nanoseconds(sleep_time - runtime);
-                ASSERT(sleep);
-                start_execution_time = std_chrono_steady_clock_now();
-            } else {
-                start_execution_time = now;
-            }
+
+        if (target_framerate != 0 && runtime < sleep_time) {
+            bool sleep = helper_sleep_nanoseconds(sleep_time - runtime);
+            ASSERT(sleep);
+
+
+            const uint64_t after_sleep_now = std_chrono_steady_clock_now();
+            //TODO: uefi is pretty inaccurate, fix it here, by providing a smaller value for the  sleep function!
+            /* SDL_LogVerbose(
+                    SDL_LOG_CATEGORY_APPLICATION, "sleep time: %llu, actually slept: %llu  ", sleep_time - runtime,
+                    after_sleep_now - now
+            ); */
+
+            dt = ((double) (after_sleep_now - start_execution_time)) / (double) (NANOSECONDS(1));
+
+            start_execution_time = after_sleep_now;
+        } else {
+            start_execution_time = now;
+            dt = ((double) runtime) / (double) (NANOSECONDS(1));
         }
     }
 
