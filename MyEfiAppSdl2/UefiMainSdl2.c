@@ -30,7 +30,7 @@
 // C++ like functions
 
 #ifdef __cplusplus
-#error "TODO"
+#error "Not supported, as this is a c application"
 #else
 
 #include <errno.h>
@@ -83,9 +83,70 @@ static bool rand_bool(void) {
     return (rand() & 0x01) != 0;
 }
 
-[[maybe_unused]] void displayFPS(SDL_Renderer* renderer, double fps) {
-    //TODO: display it on the top corner
-    SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "FPS: %.2f", fps);
+#define COLOR_RED ((SDL_Color){ .r = 0xFF, .g = 0, .b = 0, .a = 0xFF })
+#define COLOR_GREEN ((SDL_Color){ .r = 0, .g = 0xFF, .b = 0, .a = 0xFF })
+#define COLOR_BLUE ((SDL_Color){ .r = 0, .g = 0, .b = 0xFF, .a = 0xFF })
+#define COLOR_WHITE ((SDL_Color){ .r = 0, .g = 0, .b = 0, .a = 0xFF })
+#define COLOR_BLACK ((SDL_Color){ .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF })
+
+static void SDL_SetRenderDrawColorC(SDL_Renderer* renderer, SDL_Color color) {
+    int result = SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    ASSERT(result == 0);
+}
+
+
+//using 8x8 bitmap font from
+// https://github.com/dhepper/font8x8
+
+#include "./font8x8/font8x8_basic.h"
+
+void font_8x8_draw_char(SDL_Renderer* renderer, char c, int x, int y, int scale) {
+    uint8_t* glyph = (uint8_t*) font8x8_basic[(uint8_t) c];
+
+    for (int row = 0; row < 8; row++) {
+        for (int col = 0; col < 8; col++) {
+
+            // Font uses the least-significant bit as the leftmost pixel.
+            if (glyph[row] & (1 << col)) {
+
+                SDL_Rect pixel = { x + col * scale, y + row * scale, scale, scale };
+
+                SDL_RenderFillRect(renderer, &pixel);
+            }
+        }
+    }
+}
+
+void font_8x8_draw_text(SDL_Renderer* renderer, const char* text, int x, int y, int scale, SDL_Color color) {
+    SDL_SetRenderDrawColorC(renderer, color);
+    for (int i = 0; text[i] != '\0'; i++) {
+        font_8x8_draw_char(renderer, text[i], x + i * 8 * scale, y, scale);
+    }
+}
+
+static double gFps = 0;
+
+[[maybe_unused]] void displayFPS(SDL_Renderer* renderer) {
+
+#define FPS_BUFFER_SIZE 0xFF
+
+    static char fps_buffer[FPS_BUFFER_SIZE];
+
+    int res = SDL_snprintf(fps_buffer, FPS_BUFFER_SIZE, "FPS: %.2f", gFps);
+    ASSERT(res > 0 && res <= FPS_BUFFER_SIZE);
+
+    int text_size = SDL_strlen(fps_buffer);
+
+    const uint32_t character_scale = (SDL_max(SCREEN_WIDTH / 50, SCREEN_HEIGHT / 10) / 8);
+
+    SDL_Rect text_box = { 0, 0, text_size * character_scale * 8, character_scale * 8 };
+
+    SDL_SetRenderDrawColorC(renderer, COLOR_BLACK);
+
+    SDL_RenderFillRect(renderer, &text_box);
+
+    font_8x8_draw_text(renderer, fps_buffer, text_box.x, text_box.y, character_scale, COLOR_WHITE);
+    //
 }
 
 typedef void* (*Sdl2RenderExampleModeInitData)();
@@ -162,10 +223,6 @@ static SDL_Color rgb_to_sdl_color(rgb color) {
     ){ .r = (Uint8) (color.r * 255.0), .g = (Uint8) (color.g * 255.0), .b = (Uint8) (color.b * 255.0), .a = 0xFF };
 }
 
-static void SDL_SetRenderDrawColorC(SDL_Renderer* renderer, SDL_Color color) {
-    int result = SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    ASSERT(result == 0);
-}
 
 bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
 
@@ -225,11 +282,6 @@ typedef struct {
     SDL_Color color;
 } Sdl2RenderExample2Data;
 
-#define COLOR_RED ((SDL_Color){ .r = 0xFF, .g = 0, .b = 0, .a = 0xFF })
-#define COLOR_GREEN ((SDL_Color){ .r = 0, .g = 0xFF, .b = 0, .a = 0xFF })
-#define COLOR_BLUE ((SDL_Color){ .r = 0, .g = 0, .b = 0xFF, .a = 0xFF })
-#define COLOR_WHITE ((SDL_Color){ .r = 0, .g = 0, .b = 0, .a = 0xFF })
-#define COLOR_BLACK ((SDL_Color){ .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF })
 
 void Sdl2RenderExample2_reset_data(void* _data) {
     Sdl2RenderExample2Data* data = (Sdl2RenderExample2Data*) _data;
@@ -547,11 +599,13 @@ int sdl2_main(void) {
         if (current_time - start_time >= update_time) {
             const double elapsed = (double) (current_time - start_time) / count_per_s;
 
-            displayFPS(renderer, (double) (frame_counter) / elapsed);
+            gFps = (double) (frame_counter) / elapsed;
 
             start_time = current_time;
             frame_counter = 0;
         }
+
+        displayFPS(renderer);
 #endif
 
         SDL_RenderPresent(renderer);
@@ -562,7 +616,6 @@ int sdl2_main(void) {
             const uint64_t runtime = (now - start_execution_time);
 
             if (runtime < sleep_time) {
-                //TODO(totto): use SDL_DelayNS in sdl >= 3.0
                 bool sleep = helper_sleep_nanoseconds(sleep_time - runtime);
                 ASSERT(sleep);
                 start_execution_time = std_chrono_steady_clock_now();
