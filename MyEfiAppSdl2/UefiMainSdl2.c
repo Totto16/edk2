@@ -66,6 +66,42 @@ static bool helper_sleep_nanoseconds(uint64_t nano_seconds) {
     } while (true);
 }
 
+//NOTE: this is just the value on qemu, is it always correct, i don't think so, but until we have a method to get that, it's hard to say
+#define UEFI_NANOSECONDS_WHICH_USE_TIMER 100000000ULL
+
+//TODO: qith 60 fps this mostly stalls and therefore the cpu is ath 100%, are there alternatives in UEFI?
+static bool uefi_nanosleep_wrapper(uint64_t nano_seconds) {
+
+    const uint64_t start_counter = SDL_GetPerformanceCounter();
+
+    const uint64_t desired_counter = start_counter + nano_seconds;
+
+    uint64_t current_counter = start_counter;
+
+    while (desired_counter > current_counter) {
+
+
+        const uint64_t left = desired_counter - current_counter;
+
+        uint64_t portion = left >= 10000ULL ? left / 2 : left;
+
+        //as nanosleep on uefi uses stall, when the time is too low, it's better to use higher values, when possible, as then it uses the event timer, which doesn't stall
+        if (left > (UEFI_NANOSECONDS_WHICH_USE_TIMER + 1)) {
+            portion = UEFI_NANOSECONDS_WHICH_USE_TIMER + 1;
+        }
+
+        bool result = helper_sleep_nanoseconds(portion);
+
+        if (!result) {
+            return false;
+        }
+
+        current_counter = SDL_GetPerformanceCounter();
+    }
+    return true;
+}
+
+
 #endif
 
 
@@ -664,7 +700,7 @@ int sdl2_main(void) {
 
 
         if (fps_setting.framerate != 0 && runtime < fps_setting.sleep_time_ns) {
-            bool sleep = helper_sleep_nanoseconds(fps_setting.sleep_time_ns - runtime);
+            bool sleep = uefi_nanosleep_wrapper(fps_setting.sleep_time_ns - runtime);
             ASSERT(sleep);
 
 
