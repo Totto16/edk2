@@ -266,6 +266,35 @@ bool Sdl2RenderExample2_render(SDL_Renderer* renderer, void* _data) {
 
     switch (data->mode) {
         case Sdl2RenderExample2ModeDefault: {
+
+
+#define COLORS_SIZE 5
+            static SDL_Color colors[] = {
+                COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_WHITE, COLOR_BLACK,
+            };
+
+            SDL_COMPILE_TIME_ASSERT(colors, SDL_arraysize(colors) == COLORS_SIZE);
+
+            const int bar_size = SCREEN_WIDTH / COLORS_SIZE;
+
+            for (size_t i = 0; i < COLORS_SIZE; ++i) {
+                SDL_Color color = colors[i];
+                SDL_SetRenderDrawColorC(renderer, color);
+
+                int start_x = i * bar_size;
+                int end_x = (i + 1) * bar_size;
+
+                if (i + 1 == COLORS_SIZE) {
+                    end_x = SCREEN_WIDTH;
+                }
+
+                SDL_Rect bar_rect = { start_x, 0, end_x, SCREEN_HEIGHT };
+
+                SDL_RenderFillRect(renderer, &bar_rect);
+            }
+
+
+            break;
         }
         case Sdl2RenderExample2ModeOneColor: {
             SDL_SetRenderDrawColorC(renderer, data->color);
