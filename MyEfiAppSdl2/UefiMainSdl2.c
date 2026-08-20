@@ -236,7 +236,6 @@ static SDL_Color rgb_to_sdl_color(rgb color) {
     ){ .r = (Uint8) (color.r * 255.0), .g = (Uint8) (color.g * 255.0), .b = (Uint8) (color.b * 255.0), .a = 0xFF };
 }
 
-
 bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
 
     Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
@@ -263,16 +262,24 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
     // Bounce horizontally
     if (data->rect.x <= 0) {
         data->dx = MOVEMENT_PER_SECOND_DX_EXAMPLE1;
+        int reversed = -(data->rect.x);
+        data->rect.x = SDL_max(0, reversed);
     } else if (data->rect.x + data->rect.w >= SCREEN_WIDTH) {
         data->dx = -MOVEMENT_PER_SECOND_DX_EXAMPLE1;
+        int reversed = SCREEN_WIDTH - ((data->rect.x + data->rect.w) - SCREEN_WIDTH) - data->rect.w;
+        data->rect.x = SDL_min(SCREEN_WIDTH, reversed);
     }
 
 
     // Bounce vertically
     if (data->rect.y <= 0) {
         data->dy = MOVEMENT_PER_SECOND_DY_EXAMPLE1;
+        int reversed = -(data->rect.y);
+        data->rect.y = SDL_max(0, reversed);
     } else if (data->rect.y + data->rect.h >= SCREEN_HEIGHT) {
         data->dy = -MOVEMENT_PER_SECOND_DY_EXAMPLE1;
+        int reversed = SCREEN_HEIGHT - ((data->rect.y + data->rect.h) - SCREEN_HEIGHT) - data->rect.h;
+        data->rect.y = SDL_min(SCREEN_HEIGHT, reversed);
     }
 
     hsv rect_orig_color = (hsv){
