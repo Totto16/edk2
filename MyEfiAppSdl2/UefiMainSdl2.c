@@ -529,6 +529,9 @@ int sdl2_main(void) {
     uint64_t frame_counter = 0;
     const uint64_t update_time = freq / 2; //0.5 s;
     const double count_per_s = (double) freq;
+
+    bool shouldDisplayFps = true;
+
 #endif
 
     Sdl2RenderExampleMode* current_mode = setup_mode(0);
@@ -569,6 +572,8 @@ int sdl2_main(void) {
                         }
                     } else if (key_event.keysym.sym == 'r') {
                         reset_mode_data(current_mode);
+                    } else if (key_event.keysym.sym == 'f') {
+                        shouldDisplayFps = !shouldDisplayFps;
                     } else if (key_event.keysym.sym == 27) {
                         //ESC
                         SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "ESC: Quitting");
@@ -609,7 +614,9 @@ int sdl2_main(void) {
             frame_counter = 0;
         }
 
-        displayFPS(renderer);
+        if (shouldDisplayFps) {
+            displayFPS(renderer);
+        }
 #endif
 
         SDL_RenderPresent(renderer);
