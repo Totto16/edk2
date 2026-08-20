@@ -92,13 +92,19 @@ typedef void* (*Sdl2RenderExampleModeInitData)();
 
 typedef void (*Sdl2RenderExampleModeResetData)(void*);
 
+typedef void (*Sdl2RenderExampleModeDestroyData)(void*);
+
+typedef bool (*Sdl2RenderExampleModeProcessKeyData)(void*, SDL_Keysym keysm);
+
 typedef bool (*Sdl2RenderExampleModeRender)(SDL_Renderer* renderer, void* data);
 
 typedef struct {
     void* data;
     Sdl2RenderExampleModeInitData init_data;
     Sdl2RenderExampleModeResetData reset_data;
+    Sdl2RenderExampleModeDestroyData destroy_data;
     Sdl2RenderExampleModeRender render;
+    Sdl2RenderExampleModeProcessKeyData process_key;
 } Sdl2RenderExampleMode;
 
 #define RECT_WIDTH_EXAMPLE1 200
@@ -144,6 +150,23 @@ void* Sdl2RenderExample1_init_data(void) {
     return data;
 }
 
+void Sdl2RenderExample1_destroy_data(void* _data) {
+    Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
+
+    SDL_free(data);
+}
+
+static SDL_Color rgb_to_sdl_color(rgb color) {
+    return (
+            SDL_Color
+    ){ .r = (Uint8) (color.r * 255.0), .g = (Uint8) (color.g * 255.0), .b = (Uint8) (color.b * 255.0), .a = 0xFF };
+}
+
+static void SDL_SetRenderDrawColorC(SDL_Renderer* renderer, SDL_Color color) {
+    int result = SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    ASSERT(result == 0);
+}
+
 bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
 
     Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
@@ -161,10 +184,7 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
     };
     rgb final_color = hsv2rgb(orig_color);
 
-    SDL_SetRenderDrawColor(
-            renderer, //
-            (Uint8) (final_color.r * 255.0), (Uint8) (final_color.g * 255.0), (Uint8) (final_color.b * 255.0), 0xFF
-    );
+    SDL_SetRenderDrawColorC(renderer, rgb_to_sdl_color(final_color));
     SDL_RenderClear(renderer);
 
 
@@ -186,30 +206,136 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, void* _data) {
         .v = 1.0,
     };
     rgb final_rect_color = hsv2rgb(rect_orig_color);
-    SDL_SetRenderDrawColor(
-            renderer, (Uint8) (final_rect_color.r * 255.0), (Uint8) (final_rect_color.g * 255.0),
-            (Uint8) (final_rect_color.b * 255.0), 0xFF
-    );
+
+    SDL_SetRenderDrawColorC(renderer, rgb_to_sdl_color(final_rect_color));
 
     SDL_RenderFillRect(renderer, &data->rect);
 
     return false;
 }
 
-//TODO
-/* int b() {
-    // SDL_SetRenderDrawColor(renderer, 255 / 4, (255 / 4) * 2, (255 / 4) * 3, 0xFF);
 
-    // SDL_RenderFillRect(renderer, &rect);
-} */
+typedef enum {
+    Sdl2RenderExample2ModeDefault = 0,
+    Sdl2RenderExample2ModeOneColor,
+} Sdl2RenderExample2Mode;
 
-#define MODES_SIZE 1
+typedef struct {
+    Sdl2RenderExample2Mode mode;
+    SDL_Color color;
+} Sdl2RenderExample2Data;
+
+#define COLOR_RED ((SDL_Color){ .r = 0xFF, .g = 0, .b = 0, .a = 0xFF })
+#define COLOR_GREEN ((SDL_Color){ .r = 0, .g = 0xFF, .b = 0, .a = 0xFF })
+#define COLOR_BLUE ((SDL_Color){ .r = 0, .g = 0, .b = 0xFF, .a = 0xFF })
+#define COLOR_WHITE ((SDL_Color){ .r = 0, .g = 0, .b = 0, .a = 0xFF })
+#define COLOR_BLACK ((SDL_Color){ .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF })
+
+void Sdl2RenderExample2_reset_data(void* _data) {
+    Sdl2RenderExample2Data* data = (Sdl2RenderExample2Data*) _data;
+
+    data->mode = Sdl2RenderExample2ModeDefault;
+    data->color = COLOR_WHITE;
+}
+
+
+void* Sdl2RenderExample2_init_data(void) {
+
+    Sdl2RenderExample2Data* data = SDL_malloc(sizeof(Sdl2RenderExample2Data));
+
+    if (data == NULL) {
+        return NULL;
+    }
+
+    Sdl2RenderExample2_reset_data(data);
+
+    return data;
+}
+
+void Sdl2RenderExample2_destroy_data(void* _data) {
+    Sdl2RenderExample2Data* data = (Sdl2RenderExample2Data*) _data;
+
+    SDL_free(data);
+}
+
+
+bool Sdl2RenderExample2_render(SDL_Renderer* renderer, void* _data) {
+
+    Sdl2RenderExample2Data* data = (Sdl2RenderExample2Data*) _data;
+
+
+    switch (data->mode) {
+        case Sdl2RenderExample2ModeDefault: {
+        }
+        case Sdl2RenderExample2ModeOneColor: {
+            SDL_SetRenderDrawColorC(renderer, data->color);
+
+            SDL_Rect fullscreen_rect = { 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT };
+
+            SDL_RenderFillRect(renderer, &fullscreen_rect);
+            break;
+        }
+        default: {
+            ASSERT(data->mode && false);
+        }
+    }
+
+
+    return false;
+}
+
+bool Sdl2RenderExample2_process_key(void* _data, SDL_Keysym keysym) {
+    Sdl2RenderExample2Data* data = (Sdl2RenderExample2Data*) _data;
+
+    if (keysym.sym == 'd') {
+        data->mode = Sdl2RenderExample2ModeDefault;
+        data->color = COLOR_WHITE;
+        return true;
+    } else if (keysym.sym == 'e') {
+        // r is already used
+        data->mode = Sdl2RenderExample2ModeOneColor;
+        data->color = COLOR_RED;
+        return true;
+    } else if (keysym.sym == 'g') {
+        data->mode = Sdl2RenderExample2ModeOneColor;
+        data->color = COLOR_GREEN;
+        return true;
+    } else if (keysym.sym == 'b') {
+        data->mode = Sdl2RenderExample2ModeOneColor;
+        data->color = COLOR_BLUE;
+        return true;
+    } else if (keysym.sym == 'w') {
+        data->mode = Sdl2RenderExample2ModeOneColor;
+        data->color = COLOR_WHITE;
+        return true;
+    } else if (keysym.sym == 'l') {
+        // b is already used
+        data->mode = Sdl2RenderExample2ModeOneColor;
+        data->color = COLOR_BLACK;
+        return true;
+    }
+
+    return false;
+}
+
+
+#define MODES_SIZE 2
 static Sdl2RenderExampleMode g_modes[] = {
     (Sdl2RenderExampleMode){
                             .data = NULL,
                             .init_data = Sdl2RenderExample1_init_data,
                             .reset_data = Sdl2RenderExample1_reset_data,
+                            .destroy_data = Sdl2RenderExample1_destroy_data,
                             .render = Sdl2RenderExample1_render,
+                            .process_key = NULL,
+                            },
+    (Sdl2RenderExampleMode){
+                            .data = NULL,
+                            .init_data = Sdl2RenderExample2_init_data,
+                            .reset_data = Sdl2RenderExample2_reset_data,
+                            .destroy_data = Sdl2RenderExample2_destroy_data,
+                            .render = Sdl2RenderExample2_render,
+                            .process_key = Sdl2RenderExample2_process_key,
                             }
 };
 
@@ -228,6 +354,8 @@ Sdl2RenderExampleMode* setup_mode(uint8_t idx) {
     ASSERT(mode->init_data != NULL);
     ASSERT(mode->render != NULL);
     // reset_data might be NULL
+    ASSERT(mode->destroy_data != NULL);
+    // process_key might be null
 
     mode->data = mode->init_data();
 
@@ -242,7 +370,7 @@ void reset_mode(Sdl2RenderExampleMode* mode) {
 
     ASSERT(mode->data != NULL);
 
-    SDL_free(mode->data);
+    mode->destroy_data(mode->data);
 
     mode->data = NULL;
 }
@@ -263,6 +391,14 @@ bool reset_mode_data(Sdl2RenderExampleMode* mode) {
     return true;
 }
 
+
+bool mode_process_key(Sdl2RenderExampleMode* mode, SDL_Keysym keysym) {
+    if (mode->process_key == NULL) {
+        return false;
+    }
+
+    return mode->process_key(mode->data, keysym);
+}
 
 int sdl2_main(void) {
 
@@ -352,6 +488,8 @@ int sdl2_main(void) {
                         //ESC
                         SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "ESC: Quitting");
                         quit = true;
+                    } else {
+                        mode_process_key(current_mode, key_event.keysym);
                     }
                     break;
                 case SDL_KEYUP:
