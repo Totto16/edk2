@@ -125,6 +125,9 @@
 
 !endif
 
+  ShellCEntryLibDynamical|SupportLib/Library/UefiShellCEntryLibDynamical/UefiShellCEntryLibDynamical.inf
+
+
 
 [Components]
   MyEfiAppSdl2/MyEfiAppSdl2.inf
@@ -137,7 +140,7 @@
   gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80400042
 
 # this is the same address as QEMU uses
-  gUefiOvmfPkgTokenSpaceGuid.PcdDebugIoPort|0x402|UINT16|4
+  gUefiOvmfPkgTokenSpaceGuid.PcdDebugIoPort|0x402
 
 #define DEBUG_PROPERTY_DEBUG_ASSERT_ENABLED       0x01
 #define DEBUG_PROPERTY_DEBUG_PRINT_ENABLED        0x02

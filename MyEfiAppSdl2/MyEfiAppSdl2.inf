@@ -15,8 +15,8 @@
   OvmfPkg/OvmfPkg.dec
   StdLib/StdLib.dec
   ShellPkg/ShellPkg.dec
-  LibraryPkg/SDL2Pkg/SDL2Pkg.dec
-  LibraryPkg/SupportLib/SupportLib.dec
+  SDL2Pkg/SDL2Pkg.dec
+  SupportLib/SupportLib.dec
 
 [LibraryClasses]
   UefiApplicationEntryPoint
