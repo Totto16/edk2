@@ -839,9 +839,9 @@ int EDK2_LIBC_ENTRY_NAME(IN int Argc, IN char** Argv) {
     printf("stdout print: %d\r\n", 42);
     fflush(stdout);
 
-    DEBUG((DEBUG_WARN, "starting sdl2 example\r\n"));
+    DEBUG((DEBUG_WARN, "starting sdl2 CPP example\r\n"));
     int result = sdl2_main();
-    DEBUG((DEBUG_ERROR, "SDL2 result: %d\r\n", result));
+    DEBUG((DEBUG_ERROR, "SDL2 CPP result: %d\r\n", result));
 
     return result;
 }
