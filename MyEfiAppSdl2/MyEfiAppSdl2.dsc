@@ -100,13 +100,13 @@
 !if $(OOPETRIS_RUNTIME_TARGET) == "hardware"
   #TODO: doesn't work on qemu, but maybe on CPU??
   TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
-  LibUEfiSupport|LibraryPkg/SupportLib/Library/TimerLib/SupportLibTimerImpl.inf
+  LibUEfiSupport|SupportLib/Library/TimerLib/SupportLibTimerImpl.inf
 !else
-  LibUEfiSupportNanosleep|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultNanosleep.inf
+  LibUEfiSupportNanosleep|SupportLib/Library/Default/SupportLibDefaultNanosleep.inf
 
-  LibUEfiSupportClock|LibraryPkg/SupportLib/Library/TimerLib/SupportLibTimerClock.inf
-  #LibUEfiSupportClock|LibraryPkg/SupportLib/Library/Default/SupportLibDefaultClock.inf
-  #LibUEfiSupportClock|LibraryPkg/SupportLib/Library/Null/SupportLibNullClock.inf
+  LibUEfiSupportClock|SupportLib/Library/TimerLib/SupportLibTimerClock.inf
+  #LibUEfiSupportClock|SupportLib/Library/Default/SupportLibDefaultClock.inf
+  #LibUEfiSupportClock|SupportLib/Library/Null/SupportLibNullClock.inf
 
   ## doesn't work on qemu, setup (cpuid leaf 0x15) error
   ## TimerLib|UefiCpuPkg/Library/CpuTimerLib/BaseCpuTimerLib.inf
@@ -157,7 +157,7 @@
 
 
 [Components]
-  LibraryPkg/SDL2Pkg/SDL2Pkg.inf
+  SDL2Pkg/SDL2Pkg.inf
 
-!include LibraryPkg/SDL2Pkg/SDL2Pkg.inc
+!include SDL2Pkg/SDL2Pkg.inc
 

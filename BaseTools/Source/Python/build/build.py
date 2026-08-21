@@ -2713,6 +2713,7 @@ def Main():
         #
         BuildError = False
     except OSError as X:
+        print(X)
         ReturnCode = RESOURCE_UNKNOWN_ERROR
     except FatalError as X:
         if MyBuild is not None:

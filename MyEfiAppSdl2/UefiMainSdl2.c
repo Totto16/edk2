@@ -736,15 +736,48 @@ const char* EFIAPI bool_string(bool value) {
     return value ? "true" : "false";
 }
 
+
 static int g_global_value = 0;
-static __attribute__((constructor)) void initializeGlobalValue(void) {
+static __attribute__((constructor(101))) void initializeGlobalValue1(void) {
+    if (g_global_value != 0) {
+        DEBUG((DEBUG_ERROR, "[error] g_global_value constructors not run in correct order: %d\n", g_global_value));
+        ASSERT(FALSE);
+    }
+
     g_global_value = 1;
-    DEBUG((DEBUG_ERROR, "running g_global_value constructor\n", g_global_value));
+    DEBUG((DEBUG_ERROR, "running constructor %a\n", __func__));
 }
 
-static __attribute__((destructor)) void finishGlobalValue(void) {
+static __attribute__((constructor(102))) void initializeGlobalValue2(void) {
+    if (g_global_value != 1) {
+        DEBUG((DEBUG_ERROR, "[error] g_global_value constructors not run in correct order: %d\n", g_global_value));
+        ASSERT(FALSE);
+    }
+
+    g_global_value = 2;
+    DEBUG((DEBUG_ERROR, "running constructor %a\n", __func__));
+}
+
+static __attribute__((destructor(101))) void finishGlobalValue1(void) {
+    if (g_global_value != 3) {
+        DEBUG((DEBUG_ERROR, "[error] g_global_value deconstructors not run in correct order: %d\n", g_global_value));
+        ASSERT(FALSE);
+    }
+
+
     g_global_value = 0;
-    DEBUG((DEBUG_ERROR, "running g_global_value destructor\n", g_global_value));
+    DEBUG((DEBUG_ERROR, "running destructor %a\n", __func__));
+}
+
+static __attribute__((destructor(102))) void finishGlobalValue2(void) {
+    if (g_global_value != 2) {
+        DEBUG((DEBUG_ERROR, "[error] g_global_value deconstructors not run in correct order: %d\n", g_global_value));
+        ASSERT(FALSE);
+    }
+
+
+    g_global_value = 3;
+    DEBUG((DEBUG_ERROR, "running destructor %a\n", __func__));
 }
 
 /***
@@ -768,7 +801,7 @@ int EDK2_LIBC_ENTRY_NAME(IN int Argc, IN char** Argv) {
     DEBUG((DEBUG_VERBOSE, "[verbose] HELLO WORLD.\n"));
     DEBUG((DEBUG_WARN, "[warn] HELLO WORLD.\n"));
 
-    if (g_global_value != 1) {
+    if (g_global_value != 2) {
         DEBUG((DEBUG_ERROR, "[error] g_global_value not initialized: %d\n", g_global_value));
         ASSERT(FALSE);
     }
