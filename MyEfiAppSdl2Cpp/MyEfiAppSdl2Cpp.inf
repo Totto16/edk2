@@ -13,8 +13,8 @@
 [Packages]
   MdePkg/MdePkg.dec
   OvmfPkg/OvmfPkg.dec
-  StdLib/StdLib.dec
   LLVM/LLVMPkg.dec
+  StdLib/StdLib.dec
   ShellPkg/ShellPkg.dec
   SDL2Pkg/SDL2Pkg.dec
   SupportLib/SupportLib.dec
@@ -28,6 +28,9 @@
   DebugLib
 # shell libs
   ShellCEntryLibDynamical
+# CPP Libs
+  LibCXX
+  LibCXXABI
 # C Libs
   LibC
   LibCtype
@@ -43,9 +46,6 @@
   LibGdtoa
 #  sdl2
   LibSDL2
-# CPP Libs
-  LibCXX
-  LibCXXABI
 # Support library (Common custom functionality)
   LibUEfiSupportNanosleep
   LibUEfiSupportClock
@@ -63,7 +63,7 @@
 
 
 [BuildOptions]
-  *_*_*_CC_FLAGS  = -std=c11
+  *_*_*_CCONLY_FLAGS  = -std=c11
   *_*_*_CXX_FLAGS = -std=c++23
 
   *_*_*_CC_FLAGS = -D__UEFI__

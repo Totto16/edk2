@@ -1,17 +1,21 @@
+extern "C" {
+
 #include <OvmfPkg/Library/PlatformDebugLibIoPort/DebugLibDetect.h>
 
 #include <Library/DebugLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Uefi.h>
+}
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include <libc/main.h>
+extern "C" {
 
 #include "./Color.h"
+}
 
 #include "SDL.h"
 
@@ -23,107 +27,101 @@
 
 #include <UEfiTimeSupport.h>
 
-// C++ like functions
-
-#ifdef __cplusplus
-#error "Not supported, as this is a C application"
-#else
-
 #include <errno.h>
 
-#define NANOSECONDS(x) ((x) * 1000000000ULL)
+#include <optional>
+
+#include <chrono>
+
+using namespace std::chrono_literals;
+
+namespace helper {
+
+    static bool sleep_nanoseconds(std::chrono::nanoseconds nano_seconds) {
+        int result = 0;
+        struct timespec remaining = {};
+        struct timespec current{
+            .tv_sec = static_cast<decltype(remaining.tv_sec)>(
+                    std::chrono::duration_cast<std::chrono::seconds>(nano_seconds).count()
+            ),
+            .tv_nsec = static_cast<decltype(remaining.tv_nsec)>(
+                    nano_seconds.count() % std::chrono::duration_cast<std::chrono::nanoseconds>(1s).count()
+            ),
+        };
+
+        do { // NOLINT(cppcoreguidelines-avoid-do-while)
+            result = nanosleep(&current, &remaining);
+
+            if (result == 0) {
+                return true;
+            }
+
+            if (errno != EINTR) {
+                return false;
+            }
 
 
-static uint64_t std_chrono_steady_clock_now(void) {
-    struct timespec ts;
-    int res = clock_gettime(CLOCK_MONOTONIC, &ts);
-    ASSERT(res == 0);
+            current = remaining;
+        } while (true);
+    }
 
-    uint64_t nanoseconds = (((uint64_t) ts.tv_sec) * NANOSECONDS(1)) + ts.tv_nsec;
-
-    return nanoseconds;
-}
-
-static bool helper_sleep_nanoseconds(uint64_t nano_seconds) {
-    int result = 0;
-    struct timespec remaining = {};
-    struct timespec current = (struct timespec){
-        .tv_sec = nano_seconds / NANOSECONDS(1),
-        .tv_nsec = nano_seconds % NANOSECONDS(1),
-    };
-
-    do { // NOLINT(cppcoreguidelines-avoid-do-while)
-        result = nanosleep(&current, &remaining);
-
-        if (result == 0) {
-            return true;
-        }
-
-        if (errno != EINTR) {
-            return false;
-        }
-
-
-        current = remaining;
-    } while (true);
-}
+} // namespace helper
 
 //NOTE: this is just the value on qemu, is it always correct, i don't think so, but until we have a method to get that, it's hard to say
-#define UEFI_NANOSECONDS_WHICH_USE_TIMER 100000000ULL
+#define UEFI_NANOSECONDS_WHICH_USE_TIMER 100000000ns
 
 //TODO: qith 60 fps this mostly stalls and therefore the cpu is ath 100%, are there alternatives in UEFI?
-static bool uefi_nanosleep_wrapper(uint64_t nano_seconds) {
+static bool uefi_nanosleep_wrapper(std::chrono::nanoseconds nano_seconds) {
 
-    const uint64_t start_counter = SDL_GetPerformanceCounter();
+    const auto start_counter = std::chrono::nanoseconds{ SDL_GetPerformanceCounter() };
 
-    const uint64_t desired_counter = start_counter + nano_seconds;
+    const auto desired_counter = start_counter + nano_seconds;
 
-    uint64_t current_counter = start_counter;
+    auto current_counter = start_counter;
 
     while (desired_counter > current_counter) {
 
 
-        const uint64_t left = desired_counter - current_counter;
+        const std::chrono::nanoseconds left = desired_counter - current_counter;
 
-        uint64_t portion = left >= 10000ULL ? left / 2 : left;
+        std::chrono::nanoseconds portion = left >= 10000ns ? left / 2 : left;
 
         //as nanosleep on uefi uses stall, when the time is too low, it's better to use higher values, when possible, as then it uses the event timer, which doesn't stall
-        if (left > (UEFI_NANOSECONDS_WHICH_USE_TIMER + 1)) {
-            portion = UEFI_NANOSECONDS_WHICH_USE_TIMER + 1;
+        if (left > (UEFI_NANOSECONDS_WHICH_USE_TIMER + 1ns)) {
+            portion = UEFI_NANOSECONDS_WHICH_USE_TIMER + 1ns;
         }
 
-        bool result = helper_sleep_nanoseconds(portion);
+        bool result = helper::sleep_nanoseconds(portion);
 
         if (!result) {
             return false;
         }
 
-        current_counter = SDL_GetPerformanceCounter();
+        current_counter = std::chrono::nanoseconds{ SDL_GetPerformanceCounter() };
     }
     return true;
 }
 
 
-#endif
-
-
-static uint64_t get_sleep_time_ns(uint64_t target_framerate) {
-    if (target_framerate == 0) {
-        return 0;
+static std::chrono::nanoseconds get_sleep_time(std::optional<uint32_t> target_framerate) {
+    if (!target_framerate.has_value()) {
+        return 0s;
     }
-    return NANOSECONDS(1) / target_framerate;
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(1s) / target_framerate.value();
 }
 
 typedef struct {
-    uint64_t framerate;
-    uint64_t sleep_time_ns;
+    std::optional<uint32_t> framerate;
+    std::chrono::nanoseconds sleep_time;
 } FPSSetting;
 
-FPSSetting init_fps_setting(uint64_t fps) {
+FPSSetting init_fps_setting(uint32_t fps) {
 
-    return (FPSSetting){
-        .framerate = fps,
-        .sleep_time_ns = get_sleep_time_ns(fps),
+    std::optional<uint32_t> framerate = fps == 0 ? std::nullopt : std::optional<uint32_t>{ fps };
+
+    return (FPSSetting) {
+        .framerate = framerate,
+        .sleep_time = get_sleep_time(framerate),
     };
 }
 
@@ -131,11 +129,11 @@ static bool rand_bool(void) {
     return (rand() & 0x01) != 0;
 }
 
-#define COLOR_RED ((SDL_Color){ .r = 0xFF, .g = 0, .b = 0, .a = 0xFF })
-#define COLOR_GREEN ((SDL_Color){ .r = 0, .g = 0xFF, .b = 0, .a = 0xFF })
-#define COLOR_BLUE ((SDL_Color){ .r = 0, .g = 0, .b = 0xFF, .a = 0xFF })
-#define COLOR_WHITE ((SDL_Color){ .r = 0, .g = 0, .b = 0, .a = 0xFF })
-#define COLOR_BLACK ((SDL_Color){ .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF })
+#define COLOR_RED ((SDL_Color) { .r = 0xFF, .g = 0, .b = 0, .a = 0xFF })
+#define COLOR_GREEN ((SDL_Color) { .r = 0, .g = 0xFF, .b = 0, .a = 0xFF })
+#define COLOR_BLUE ((SDL_Color) { .r = 0, .g = 0, .b = 0xFF, .a = 0xFF })
+#define COLOR_WHITE ((SDL_Color) { .r = 0, .g = 0, .b = 0, .a = 0xFF })
+#define COLOR_BLACK ((SDL_Color) { .r = 0xFF, .g = 0xFF, .b = 0xFF, .a = 0xFF })
 
 static void SDL_SetRenderDrawColorC(SDL_Renderer* renderer, SDL_Color color) {
     int result = SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -146,7 +144,14 @@ static void SDL_SetRenderDrawColorC(SDL_Renderer* renderer, SDL_Color color) {
 //using 8x8 bitmap font from
 // https://github.com/dhepper/font8x8
 
+extern "C" {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnarrowing"
+
 #include "./font8x8/font8x8_basic.h"
+
+#pragma GCC diagnostic pop
+}
 
 void font_8x8_draw_char(SDL_Renderer* renderer, char c, int x, int y, int scale) {
     uint8_t* glyph = (uint8_t*) font8x8_basic[(uint8_t) c];
@@ -187,7 +192,7 @@ static double gMeasuredFps = 0;
 
     const uint32_t character_scale = SDL_max(SCREEN_WIDTH / 50, SCREEN_HEIGHT / 20) / 8;
 
-    SDL_Rect text_box = { 0, 0, (2 * character_scale) + (text_size * character_scale * 8),
+    SDL_Rect text_box = { 0, 0, static_cast<int>((2 * character_scale) + (text_size * character_scale * 8)),
                           (2 * character_scale) + (character_scale * 8) };
 
     SDL_SetRenderDrawColorC(renderer, COLOR_BLACK);
@@ -237,8 +242,8 @@ void Sdl2RenderExample1_reset_data(void* _data) {
     Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) _data;
 
 
-    data->rect = (SDL_Rect){ (SCREEN_WIDTH - RECT_HEIGHT_EXAMPLE1) / 2, (SCREEN_HEIGHT - RECT_HEIGHT_EXAMPLE1) / 2,
-                             RECT_WIDTH_EXAMPLE1, RECT_HEIGHT_EXAMPLE1 };
+    data->rect = (SDL_Rect) { (SCREEN_WIDTH - RECT_HEIGHT_EXAMPLE1) / 2, (SCREEN_HEIGHT - RECT_HEIGHT_EXAMPLE1) / 2,
+                              RECT_WIDTH_EXAMPLE1, RECT_HEIGHT_EXAMPLE1 };
 
 
     data->dx = rand_bool() ? -MOVEMENT_PER_SECOND_DX_EXAMPLE1 : MOVEMENT_PER_SECOND_DX_EXAMPLE1;
@@ -251,7 +256,7 @@ void Sdl2RenderExample1_reset_data(void* _data) {
 
 void* Sdl2RenderExample1_init_data(void) {
 
-    Sdl2RenderExample1Data* data = SDL_malloc(sizeof(Sdl2RenderExample1Data));
+    Sdl2RenderExample1Data* data = (Sdl2RenderExample1Data*) SDL_malloc(sizeof(Sdl2RenderExample1Data));
 
     if (data == NULL) {
         return NULL;
@@ -271,7 +276,7 @@ void Sdl2RenderExample1_destroy_data(void* _data) {
 static SDL_Color rgb_to_sdl_color(rgb color) {
     return (
             SDL_Color
-    ){ .r = (Uint8) (color.r * 255.0), .g = (Uint8) (color.g * 255.0), .b = (Uint8) (color.b * 255.0), .a = 0xFF };
+    ) { .r = (Uint8) (color.r * 255.0), .g = (Uint8) (color.g * 255.0), .b = (Uint8) (color.b * 255.0), .a = 0xFF };
 }
 
 bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
@@ -284,7 +289,7 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
 
     const double h = fmod((((double) counter) / (double) data->freq) * COLOR_PROGRESS_PER_SECOND, 360.0);
 
-    hsv orig_color = (hsv){
+    hsv orig_color = (hsv) {
         .h = h,
         .s = 1.0,
         .v = 1.0,
@@ -320,7 +325,7 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
         data->rect.y = SDL_min(SCREEN_HEIGHT, reversed);
     }
 
-    hsv rect_orig_color = (hsv){
+    hsv rect_orig_color = (hsv) {
         .h = fmod(h + 180.0, 360.0),
         .s = 1.0,
         .v = 1.0,
@@ -368,7 +373,7 @@ void Sdl2RenderExample2_reset_data(void* _data) {
 
 void* Sdl2RenderExample2_init_data(void) {
 
-    Sdl2RenderExample2Data* data = SDL_malloc(sizeof(Sdl2RenderExample2Data));
+    Sdl2RenderExample2Data* data = (Sdl2RenderExample2Data*) SDL_malloc(sizeof(Sdl2RenderExample2Data));
 
     if (data == NULL) {
         return NULL;
@@ -476,20 +481,20 @@ bool Sdl2RenderExample2_process_key(void* _data, SDL_Keysym keysym) {
 
 #define MODES_SIZE 2
 static Sdl2RenderExampleMode g_modes[] = {
-    (Sdl2RenderExampleMode){
-                            .data = NULL,
-                            .init_data = Sdl2RenderExample1_init_data,
-                            .destroy_data = Sdl2RenderExample1_destroy_data,
-                            .render = Sdl2RenderExample1_render,
-                            .process_key = Sdl2RenderExample1_process_key,
-                            },
-    (Sdl2RenderExampleMode){
-                            .data = NULL,
-                            .init_data = Sdl2RenderExample2_init_data,
-                            .destroy_data = Sdl2RenderExample2_destroy_data,
-                            .render = Sdl2RenderExample2_render,
-                            .process_key = Sdl2RenderExample2_process_key,
-                            }
+    (Sdl2RenderExampleMode) {
+                             .data = NULL,
+                             .init_data = Sdl2RenderExample1_init_data,
+                             .destroy_data = Sdl2RenderExample1_destroy_data,
+                             .render = Sdl2RenderExample1_render,
+                             .process_key = Sdl2RenderExample1_process_key,
+                             },
+    (Sdl2RenderExampleMode) {
+                             .data = NULL,
+                             .init_data = Sdl2RenderExample2_init_data,
+                             .destroy_data = Sdl2RenderExample2_destroy_data,
+                             .render = Sdl2RenderExample2_render,
+                             .process_key = Sdl2RenderExample2_process_key,
+                             }
 };
 
 SDL_COMPILE_TIME_ASSERT(g_modes, SDL_arraysize(g_modes) == MODES_SIZE);
@@ -576,7 +581,7 @@ int sdl2_main(void) {
 
     const Uint64 freq = SDL_GetPerformanceFrequency();
 
-    uint64_t start_execution_time = std_chrono_steady_clock_now();
+    auto start_execution_time = std::chrono::steady_clock::now();
     double dt = 0.0;
 
 #if !defined(NDEBUG)
@@ -618,7 +623,7 @@ int sdl2_main(void) {
                 case SDL_MOUSEBUTTONUP:
                     // SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_MOUSEBUTTONUP event: %d", event.type);
                     break;
-                case SDL_KEYDOWN:
+                case SDL_KEYDOWN: {
                     SDL_KeyboardEvent key_event = event.key;
                     /*   SDL_LogVerbose(
                             SDL_LOG_CATEGORY_APPLICATION, "SDL_KEYDOWN event: %d %c", key_event.keysym.sym,
@@ -638,12 +643,16 @@ int sdl2_main(void) {
                     } else if (key_event.keysym.sym == 'p') {
                         //using p instead of +, as + is not the same on eng and german keyboards
                         // increase the fps cap by FPS_STEP
-                        fps_setting = init_fps_setting(fps_setting.framerate + FPS_STEP);
+                        fps_setting = init_fps_setting(
+                                fps_setting.framerate.has_value() ? fps_setting.framerate.value() + FPS_STEP : FPS_STEP
+                        );
                     } else if (key_event.keysym.sym == 'm') {
                         //using m instead of -, as - is not the same on eng and german keyboards
                         // decrease the fps cap by FPS_STEP, minimum is 1
                         fps_setting = init_fps_setting(
-                                fps_setting.framerate > FPS_STEP ? fps_setting.framerate - FPS_STEP : 1
+                                fps_setting.framerate.has_value() and fps_setting.framerate.value() > FPS_STEP
+                                        ? fps_setting.framerate.value() - FPS_STEP
+                                        : 1
                         );
                     } else if (key_event.keysym.sym == 'f') {
                         // show or hide the fps display
@@ -656,6 +665,7 @@ int sdl2_main(void) {
                         mode_process_key(current_mode, key_event.keysym);
                     }
                     break;
+                }
                 case SDL_KEYUP:
                     //  SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "SDL_KEYUP event: %d", event.type);
                     break;
@@ -697,28 +707,28 @@ int sdl2_main(void) {
         SDL_RenderPresent(renderer);
 
 
-        const uint64_t now = std_chrono_steady_clock_now();
-        const uint64_t runtime = now - start_execution_time;
+        const auto now = std::chrono::steady_clock::now();
+        const auto runtime = now - start_execution_time;
 
 
-        if (fps_setting.framerate != 0 && runtime < fps_setting.sleep_time_ns) {
-            bool sleep = uefi_nanosleep_wrapper(fps_setting.sleep_time_ns - runtime);
+        if (fps_setting.framerate != 0 && runtime < fps_setting.sleep_time) {
+            bool sleep = uefi_nanosleep_wrapper(fps_setting.sleep_time - runtime);
             ASSERT(sleep);
 
 
-            const uint64_t after_sleep_now = std_chrono_steady_clock_now();
+            const auto after_sleep_now = std::chrono::steady_clock::now();
             //TODO: uefi is pretty inaccurate, fix it here, by providing a smaller value for the  sleep function!
             /* SDL_LogVerbose(
                     SDL_LOG_CATEGORY_APPLICATION, "sleep time: %llu, actually slept: %llu  ", sleep_time - runtime,
                     after_sleep_now - now
             ); */
 
-            dt = ((double) (after_sleep_now - start_execution_time)) / (double) (NANOSECONDS(1));
+            dt = std::chrono::duration<double, std::nano>(after_sleep_now - start_execution_time).count();
 
             start_execution_time = after_sleep_now;
         } else {
             start_execution_time = now;
-            dt = ((double) runtime) / (double) (NANOSECONDS(1));
+            dt = std::chrono::duration<double, std::nano>(runtime).count();
         }
     }
 
@@ -810,7 +820,7 @@ int EDK2_LIBC_ENTRY_NAME(IN int Argc, IN char** Argv) {
 
     bool debug_print_enabled = DebugPrintEnabled();
 
-    Print(L"Hello from UEFI!: plat_debug: %a debug: %a\r\n", bool_string(plat_detected),
+    Print((const CHAR16*) u"Hello from UEFI!: plat_debug: %a debug: %a\r\n", bool_string(plat_detected),
           bool_string(debug_print_enabled));
 
     // this should happend by some constructor of the lib "UefiBootServicesTableLib"
@@ -818,7 +828,7 @@ int EDK2_LIBC_ENTRY_NAME(IN int Argc, IN char** Argv) {
     // gBS = sysTable->BootServices;
     //gImageHandle = imgHandle;
 
-    Print(L"st %p bs %p imgH: %p\r\n", gST, gBS, gImageHandle);
+    Print((const CHAR16*) u"st %p bs %p imgH: %p\r\n", gST, gBS, gImageHandle);
     ASSERT(gST != NULL);
     ASSERT(gBS != NULL);
     ASSERT(gImageHandle != NULL);

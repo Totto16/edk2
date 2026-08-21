@@ -27,7 +27,7 @@
 
 #ifdef __cplusplus
 #error "Not supported, as this is a C application"
-#else
+#endif
 
 #include <errno.h>
 
@@ -102,9 +102,6 @@ static bool uefi_nanosleep_wrapper(uint64_t nano_seconds) {
     }
     return true;
 }
-
-
-#endif
 
 
 static uint64_t get_sleep_time_ns(uint64_t target_framerate) {
