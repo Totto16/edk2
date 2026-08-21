@@ -1,6 +1,6 @@
 [Defines]
   PLATFORM_NAME           = MyEfiAppBare
-  PLATFORM_GUID           = 8fd29a57-a693-4e11-bb17-dc46086af568
+  PLATFORM_GUID           = 8fd29a57-a693-4e11-bb17-dc46086af560
   PLATFORM_VERSION        = 1.0
   DSC_SPECIFICATION       = 0x0001001B
   OUTPUT_DIRECTORY        = Build/MyEfiAppBare
