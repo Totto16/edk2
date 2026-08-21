@@ -1,4 +1,4 @@
-#include "/home/totto/Code/coder2k/oopetris_pr5/temp/edk2/OvmfPkg/Library/PlatformDebugLibIoPort/DebugLibDetect.h"
+#include <OvmfPkg/Library/PlatformDebugLibIoPort/DebugLibDetect.h>
 
 #include <Library/DebugLib.h>
 #include <Library/UefiBootServicesTableLib.h>
@@ -7,9 +7,22 @@
 
 #include <stdio.h>
 
+#include <libc/main.h>
+
 
 const char* EFIAPI bool_string(bool value) {
     return value ? "true" : "false";
+}
+
+static int g_global_value = 0;
+static __attribute__((constructor)) void initializeGlobalValue(void) {
+    g_global_value = 1;
+    DEBUG((DEBUG_ERROR, "running g_global_value constructor\n", g_global_value));
+}
+
+static __attribute__((destructor)) void finishGlobalValue(void) {
+    g_global_value = 0;
+    DEBUG((DEBUG_ERROR, "running g_global_value destructor\n", g_global_value));
 }
 
 /***
@@ -26,12 +39,17 @@ const char* EFIAPI bool_string(bool value) {
   @retval  0         The application exited normally.
   @retval  Other     An error occurred.
 ***/
-int main(IN int Argc, IN char** Argv) {
+int EDK2_LIBC_ENTRY_NAME(IN int Argc, IN char** Argv) {
 
     DEBUG((DEBUG_ERROR, "[error] HELLO WORLD.\n"));
     DEBUG((DEBUG_INFO, "[info] HELLO WORLD.\n"));
     DEBUG((DEBUG_VERBOSE, "[verbose] HELLO WORLD.\n"));
     DEBUG((DEBUG_WARN, "[warn] HELLO WORLD.\n"));
+
+    if (g_global_value != 1) {
+        DEBUG((DEBUG_ERROR, "[error] g_global_value not initialized: %d\n", g_global_value));
+        ASSERT(FALSE);
+    }
 
 
     bool plat_detected = PlatformDebugLibIoPortDetect();

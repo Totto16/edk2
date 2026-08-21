@@ -47,3 +47,6 @@
 [FeaturePcd]
 
 [Pcd]
+
+[BuildOptions]
+   *_*_*_CC_FLAGS = -I$(WORKSPACE)
