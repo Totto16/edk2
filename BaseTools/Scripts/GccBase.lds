@@ -89,6 +89,17 @@ SECTIONS {
    * Retain the GCC static / global constructor / initializer and destructors / finalizer
    */
   .init_array : {
+    /* libcxx code */
+
+    PROVIDE_HIDDEN(__libcxx_init_array_start = .);
+
+    KEEP(libcxx*/*.obj(SORT_BY_INIT_PRIORITY(.init_array.*)))
+    KEEP(libcxx*/*.obj(.init_array))
+
+    PROVIDE_HIDDEN(__libcxx_init_array_end = .);
+
+    /* normal code */
+
     PROVIDE_HIDDEN(__init_array_start = .);
 
     KEEP(*(SORT_BY_INIT_PRIORITY(.init_array.*)))
