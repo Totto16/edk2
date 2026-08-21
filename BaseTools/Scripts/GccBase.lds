@@ -110,29 +110,29 @@ SECTIONS {
    * Error on unsupported (or not yet implemented) sections for construction / destruction
    */
   .preinit_array : {
-    ASSERT(0, "error: .preinit_array is not supported");
     *(.preinit_array)
   }
+  ASSERT(SIZEOF(.preinit_array) == 0, "error: .preinit_array is not supported (yet)")
 
   .init : {
-    ASSERT(0, "error: .init is deprecated (System V uses it, and GCC uses other mechanisms)");
     *(.init)
   }
+  ASSERT(SIZEOF(.init) == 0, "error: .init is deprecated (System V uses it, and GCC uses other mechanisms)")
 
   .fini : {
-    ASSERT(0, "error: .fini is deprecated (System V uses it, and GCC uses other mechanisms)");
     *(.fini)
   }
+  ASSERT(SIZEOF(.fini) == 0, "error: .fini is deprecated (System V uses it, and GCC uses other mechanisms)")
 
   .ctors : {
-    ASSERT(0, "error: .ctors is not implemented yet (C++ uses that)");
     *(.ctors)
   }
+  ASSERT(SIZEOF(.ctors) == 0, "error: .ctors is not implemented yet (C++ uses that)")
 
   .dtors : {
-    ASSERT(0, "error: .dtors is not implemented yet (C++ uses that)");
     *(.dtors)
   }
+  ASSERT(SIZEOF(.dtors) == 0, "error: .dtors is not implemented yet (C++ uses that)")
 
   /DISCARD/ : {
     *(.note.GNU-stack)
