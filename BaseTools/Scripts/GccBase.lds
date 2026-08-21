@@ -106,6 +106,34 @@ SECTIONS {
     PROVIDE_HIDDEN(__fini_array_end = .);
   }
 
+  /*
+   * Error on unsupported (or not yet implemented) sections for construction / destruction
+   */
+  .preinit_array : {
+    ASSERT(0, "error: .preinit_array is not supported");
+    *(.preinit_array)
+  }
+
+  .init : {
+    ASSERT(0, "error: .init is deprecated (System V uses it, and GCC uses other mechanisms)");
+    *(.init)
+  }
+
+  .fini : {
+    ASSERT(0, "error: .fini is deprecated (System V uses it, and GCC uses other mechanisms)");
+    *(.fini)
+  }
+
+  .ctors : {
+    ASSERT(0, "error: .ctors is not implemented yet (C++ uses that)");
+    *(.ctors)
+  }
+
+  .dtors : {
+    ASSERT(0, "error: .dtors is not implemented yet (C++ uses that)");
+    *(.dtors)
+  }
+
   /DISCARD/ : {
     *(.note.GNU-stack)
     *(.gnu_debuglink)
