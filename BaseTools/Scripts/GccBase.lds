@@ -95,6 +95,12 @@ SECTIONS {
     KEEP(*(.init_array))
 
     PROVIDE_HIDDEN(__init_array_end = .);
+
+    PROVIDE_HIDDEN(__libc_init_array_start = .);
+
+    KEEP(*(SORT_BY_NAME(.__libc_init.*)))
+
+    PROVIDE_HIDDEN(__libc_init_array_end = .);
   }
 
   .fini_array : {
@@ -104,6 +110,12 @@ SECTIONS {
     KEEP(*(.fini_array))
 
     PROVIDE_HIDDEN(__fini_array_end = .);
+
+    PROVIDE_HIDDEN(__libc_fini_array_start = .);
+
+    KEEP(*(SORT_BY_NAME(.__libc_fini.*)))
+
+    PROVIDE_HIDDEN(__libc_fini_array_end = .);
   }
 
   /*
