@@ -8,6 +8,7 @@ extern "C" {
 
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 
 #include <libc/main.h>
 extern "C" {
@@ -794,13 +795,36 @@ static __attribute__((destructor(102))) void finishGlobalValue2(void) {
 
 static struct CppGlobal {
     uint8_t value = 0;
-    CppGlobal() {
-        DEBUG((DEBUG_ERROR, "running constructor for %a\n", __func__));
+    CppGlobal() : value{ 2 } {
+        DEBUG((DEBUG_ERROR, "running C++ constructor for %a\n", __func__));
     }
     ~CppGlobal() {
-        DEBUG((DEBUG_ERROR, "running deconstructor for %a\n", __func__));
+        DEBUG((DEBUG_ERROR, "running C++ deconstructor for %a\n", __func__));
     }
 } g_cpp_global;
+
+// see https://wiki.osdev.org/Calling_Global_Constructors#Stability_Issues
+
+
+class A {
+public:
+    A() {
+        DEBUG((DEBUG_ERROR, "running C++ constructor for %a\n", __func__));
+    }
+    void anything() {
+        DEBUG((DEBUG_ERROR, "function on statically initialized function successfully called %a\n", __func__));
+    }
+    ~A() {
+        DEBUG((DEBUG_ERROR, "running C++ deconstructor for %a\n", __func__));
+    }
+};
+
+A g_a;
+
+void foo(void) {
+    A* p_a = &g_a;
+    p_a->anything(); // <---- segfault
+}
 
 
 /***
@@ -828,6 +852,9 @@ int EDK2_LIBCXX_ENTRY_NAME(IN int Argc, IN char** Argv) {
         DEBUG((DEBUG_ERROR, "[error] g_cpp_global not initialized: %d\n", g_cpp_global.value));
         ASSERT(FALSE);
     }
+
+    foo();
+
 
     ASSERT(gST != NULL);
     ASSERT(gBS != NULL);
