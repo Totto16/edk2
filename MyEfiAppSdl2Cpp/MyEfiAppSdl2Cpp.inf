@@ -81,7 +81,6 @@
   *_*_*_CXX_FLAGS = "-fno-omit-frame-pointer"
   *_*_*_CXX_FLAGS = "-fno-exceptions"
   *_*_*_CXX_FLAGS = "-fno-threadsafe-statics"
-  *_*_*_CXX_FLAGS = "-fno-use-cxa-atexit"
   *_*_*_CXX_FLAGS = "-fno-unwind-tables"
   *_*_*_CXX_FLAGS = "-fno-asynchronous-unwind-tables"
   *_*_*_CXX_FLAGS = "-nostdinc++"

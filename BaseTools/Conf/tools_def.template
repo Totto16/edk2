@@ -832,11 +832,11 @@ RELEASE_GCCNOLTO_AARCH64_DLINK_FLAGS  = DEF(GCCNOLTO_AARCH64_DLINK_FLAGS)
 *_GCC_IA32_OBJCOPY_FLAGS        =
 *_GCC_IA32_NASM_FLAGS           = -f elf32
 
-  DEBUG_GCC_IA32_CC_FLAGS       = DEF(GCC_IA32_CC_FLAGS) -flto
-  DEBUG_GCC_IA32_DLINK_FLAGS    = DEF(GCC_IA32_X64_DLINK_FLAGS) -flto -Os -Wl,-m,elf_i386,--oformat=elf32-i386 -z common-page-size=0x40
+  DEBUG_GCC_IA32_CC_FLAGS       = DEF(GCC_IA32_CC_FLAGS) -flto=auto
+  DEBUG_GCC_IA32_DLINK_FLAGS    = DEF(GCC_IA32_X64_DLINK_FLAGS) -flto=auto -Os -Wl,-m,elf_i386,--oformat=elf32-i386 -z common-page-size=0x40
 
-RELEASE_GCC_IA32_CC_FLAGS       = DEF(GCC_IA32_CC_FLAGS) -flto
-RELEASE_GCC_IA32_DLINK_FLAGS    = DEF(GCC_IA32_X64_DLINK_FLAGS) -flto -Os -Wl,-m,elf_i386,--oformat=elf32-i386 -z common-page-size=0x40
+RELEASE_GCC_IA32_CC_FLAGS       = DEF(GCC_IA32_CC_FLAGS) -flto=auto
+RELEASE_GCC_IA32_DLINK_FLAGS    = DEF(GCC_IA32_X64_DLINK_FLAGS) -flto=auto -Os -Wl,-m,elf_i386,--oformat=elf32-i386 -z common-page-size=0x40
 
   NOOPT_GCC_IA32_CC_FLAGS       = DEF(GCC_IA32_CC_FLAGS) -O0
   NOOPT_GCC_IA32_DLINK_FLAGS    = DEF(GCC_IA32_X64_DLINK_FLAGS) -Wl,-m,elf_i386,--oformat=elf32-i386 -O0 -z common-page-size=0x40
@@ -864,11 +864,11 @@ RELEASE_GCC_IA32_DLINK_FLAGS    = DEF(GCC_IA32_X64_DLINK_FLAGS) -flto -Os -Wl,-m
 *_GCC_X64_OBJCOPY_FLAGS         =
 *_GCC_X64_NASM_FLAGS            = -f elf64
 
-  DEBUG_GCC_X64_CC_FLAGS        = DEF(GCC_X64_CC_FLAGS) -flto -DUSING_LTO
-  DEBUG_GCC_X64_DLINK_FLAGS     = DEF(GCC_X64_DLINK_FLAGS) -flto -Os -z common-page-size=0x1000
+  DEBUG_GCC_X64_CC_FLAGS        = DEF(GCC_X64_CC_FLAGS) -flto=auto -DUSING_LTO
+  DEBUG_GCC_X64_DLINK_FLAGS     = DEF(GCC_X64_DLINK_FLAGS) -flto=auto -Os -z common-page-size=0x1000
 
-RELEASE_GCC_X64_CC_FLAGS        = DEF(GCC_X64_CC_FLAGS) -flto -DUSING_LTO
-RELEASE_GCC_X64_DLINK_FLAGS     = DEF(GCC_X64_DLINK_FLAGS) -flto -Os -z common-page-size=0x1000
+RELEASE_GCC_X64_CC_FLAGS        = DEF(GCC_X64_CC_FLAGS) -flto=auto -DUSING_LTO
+RELEASE_GCC_X64_DLINK_FLAGS     = DEF(GCC_X64_DLINK_FLAGS) -flto=auto -Os -z common-page-size=0x1000
 
   NOOPT_GCC_X64_CC_FLAGS        = DEF(GCC_X64_CC_FLAGS) -O0
   NOOPT_GCC_X64_DLINK_FLAGS     = DEF(GCC_X64_DLINK_FLAGS) -O0 -z common-page-size=0x1000
@@ -900,11 +900,11 @@ RELEASE_GCC_X64_DLINK_FLAGS     = DEF(GCC_X64_DLINK_FLAGS) -flto -Os -z common-p
 *_GCC_AARCH64_VFRPP_FLAGS       = $(PLATFORM_FLAGS) DEF(GCC_VFRPP_FLAGS)
 *_GCC_AARCH64_CC_XIPFLAGS       = DEF(GCC_AARCH64_CC_XIPFLAGS)
 
-  DEBUG_GCC_AARCH64_CC_FLAGS    = DEF(GCC_AARCH64_CC_FLAGS) -flto
-  DEBUG_GCC_AARCH64_DLINK_FLAGS = DEF(GCC_AARCH64_DLINK_FLAGS) -flto -Os -L$(WORKSPACE)/BaseTools/Bin/GccLto -llto-aarch64 -Wl,-plugin-opt=-pass-through=-llto-aarch64 -Wno-lto-type-mismatch -z common-page-size=0x1000
+  DEBUG_GCC_AARCH64_CC_FLAGS    = DEF(GCC_AARCH64_CC_FLAGS) -flto=auto
+  DEBUG_GCC_AARCH64_DLINK_FLAGS = DEF(GCC_AARCH64_DLINK_FLAGS) -flto=auto -Os -L$(WORKSPACE)/BaseTools/Bin/GccLto -llto-aarch64 -Wl,-plugin-opt=-pass-through=-llto-aarch64 -Wno-lto-type-mismatch -z common-page-size=0x1000
 
-RELEASE_GCC_AARCH64_CC_FLAGS    = DEF(GCC_AARCH64_CC_FLAGS) -flto
-RELEASE_GCC_AARCH64_DLINK_FLAGS = DEF(GCC_AARCH64_DLINK_FLAGS) -flto -Os -L$(WORKSPACE)/BaseTools/Bin/GccLto -llto-aarch64 -Wl,-plugin-opt=-pass-through=-llto-aarch64 -Wno-lto-type-mismatch -z common-page-size=0x1000
+RELEASE_GCC_AARCH64_CC_FLAGS    = DEF(GCC_AARCH64_CC_FLAGS) -flto=auto
+RELEASE_GCC_AARCH64_DLINK_FLAGS = DEF(GCC_AARCH64_DLINK_FLAGS) -flto=auto -Os -L$(WORKSPACE)/BaseTools/Bin/GccLto -llto-aarch64 -Wl,-plugin-opt=-pass-through=-llto-aarch64 -Wno-lto-type-mismatch -z common-page-size=0x1000
 
   NOOPT_GCC_AARCH64_CC_FLAGS    = DEF(GCC_AARCH64_CC_FLAGS) -O0
   NOOPT_GCC_AARCH64_DLINK_FLAGS = DEF(GCC_AARCH64_DLINK_FLAGS) -O0 -z common-page-size=0x1000
