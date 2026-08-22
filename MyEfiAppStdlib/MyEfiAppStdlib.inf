@@ -49,5 +49,4 @@
 [Pcd]
 
 [BuildOptions]
-  *_*_*_CC_FLAGS = -I$(WORKSPACE)
   GCC:*_*_*_CC_FLAGS = -Wprio-ctor-dtor

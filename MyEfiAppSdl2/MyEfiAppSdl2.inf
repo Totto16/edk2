@@ -63,5 +63,4 @@
 
   *_*_*_CC_FLAGS = -D__UEFI__
   *_*_*_CC_FLAGS = "-DEFIAPI=__attribute__((ms_abi))"
-  *_*_*_CC_FLAGS = -I$(WORKSPACE)
   GCC:*_*_*_CC_FLAGS = -Wprio-ctor-dtor

@@ -1,3 +1,3 @@
 Arch=X64
-BuildDir=/home/totto/Code/coder2k/oopetris_pr5/temp/edk2/Build/MyEfiAppSdl2Cpp/DEBUG_GCC
-PlatformGuid=8fd29a57-a693-4e11-bb17-dc46086af562
+BuildDir=/home/totto/Code/coder2k/oopetris_pr5/temp/edk2/Build/MyEfiAppSdl2/DEBUG_GCC
+PlatformGuid=8fd29a57-a693-4e11-bb17-dc46086af561

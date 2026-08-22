@@ -1,5 +1,3 @@
-#include <OvmfPkg/Library/PlatformDebugLibIoPort/DebugLibDetect.h>
-
 #include <Library/DebugLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
@@ -323,6 +321,10 @@ bool Sdl2RenderExample1_render(SDL_Renderer* renderer, double dt, void* _data) {
         .v = 1.0,
     };
     rgb final_rect_color = hsv2rgb(rect_orig_color);
+
+    //SDL_Color ii = rgb_to_sdl_color(final_rect_color);
+    //SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, "final_rect_color: %u %u %u %u", ii.r, ii.g, ii.b, ii.a);
+
 
     SDL_SetRenderDrawColorC(renderer, rgb_to_sdl_color(final_rect_color));
 
@@ -733,50 +735,6 @@ const char* EFIAPI bool_string(bool value) {
     return value ? "true" : "false";
 }
 
-
-static int g_global_value = 0;
-static __attribute__((constructor(101))) void initializeGlobalValue1(void) {
-    if (g_global_value != 0) {
-        DEBUG((DEBUG_ERROR, "[error] g_global_value constructors not run in correct order: %d\n", g_global_value));
-        ASSERT(FALSE);
-    }
-
-    g_global_value = 1;
-    DEBUG((DEBUG_ERROR, "running constructor %a\n", __func__));
-}
-
-static __attribute__((constructor(102))) void initializeGlobalValue2(void) {
-    if (g_global_value != 1) {
-        DEBUG((DEBUG_ERROR, "[error] g_global_value constructors not run in correct order: %d\n", g_global_value));
-        ASSERT(FALSE);
-    }
-
-    g_global_value = 2;
-    DEBUG((DEBUG_ERROR, "running constructor %a\n", __func__));
-}
-
-static __attribute__((destructor(101))) void finishGlobalValue1(void) {
-    if (g_global_value != 3) {
-        DEBUG((DEBUG_ERROR, "[error] g_global_value deconstructors not run in correct order: %d\n", g_global_value));
-        ASSERT(FALSE);
-    }
-
-
-    g_global_value = 0;
-    DEBUG((DEBUG_ERROR, "running destructor %a\n", __func__));
-}
-
-static __attribute__((destructor(102))) void finishGlobalValue2(void) {
-    if (g_global_value != 2) {
-        DEBUG((DEBUG_ERROR, "[error] g_global_value deconstructors not run in correct order: %d\n", g_global_value));
-        ASSERT(FALSE);
-    }
-
-
-    g_global_value = 3;
-    DEBUG((DEBUG_ERROR, "running destructor %a\n", __func__));
-}
-
 /***
   Demonstrates basic workings of the main() function by displaying a
   welcoming message.
@@ -793,42 +751,12 @@ static __attribute__((destructor(102))) void finishGlobalValue2(void) {
 ***/
 int EDK2_LIBC_ENTRY_NAME(IN int Argc, IN char** Argv) {
 
-    DEBUG((DEBUG_ERROR, "[error] HELLO WORLD.\n"));
-    DEBUG((DEBUG_INFO, "[info] HELLO WORLD.\n"));
-    DEBUG((DEBUG_VERBOSE, "[verbose] HELLO WORLD.\n"));
-    DEBUG((DEBUG_WARN, "[warn] HELLO WORLD.\n"));
-
-    if (g_global_value != 2) {
-        DEBUG((DEBUG_ERROR, "[error] g_global_value not initialized: %d\n", g_global_value));
-        ASSERT(FALSE);
-    }
-
-    bool plat_detected = PlatformDebugLibIoPortDetect();
-
-    bool debug_print_enabled = DebugPrintEnabled();
-
-    Print(L"Hello from UEFI!: plat_debug: %a debug: %a\r\n", bool_string(plat_detected),
-          bool_string(debug_print_enabled));
-
-    // this should happend by some constructor of the lib "UefiBootServicesTableLib"
-    // gST = sysTable;
-    // gBS = sysTable->BootServices;
-    //gImageHandle = imgHandle;
-
-    Print(L"st %p bs %p imgH: %p\r\n", gST, gBS, gImageHandle);
     ASSERT(gST != NULL);
     ASSERT(gBS != NULL);
     ASSERT(gImageHandle != NULL);
 
-
-    fprintf(stderr, "stderr print\r\n");
-    fflush(stderr);
-    printf("stdout print: %d\r\n", 42);
-    fflush(stdout);
-
-    DEBUG((DEBUG_WARN, "starting sdl2 C example\r\n"));
+    DEBUG((DEBUG_ERROR, "starting SDL2 example in <C>\r\n"));
     int result = sdl2_main();
-    DEBUG((DEBUG_ERROR, "SDL2 C result: %d\r\n", result));
 
     return result;
 }

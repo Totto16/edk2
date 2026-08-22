@@ -18,7 +18,6 @@ UefiMain(IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE* SystemTable) {
     DEBUG((DEBUG_VERBOSE, "[verbose] HELLO WORLD.\n"));
     DEBUG((DEBUG_WARN, "[warn] HELLO WORLD.\n"));
 
-
     bool plat_detected = PlatformDebugLibIoPortDetect();
 
     bool debug_print_enabled = DebugPrintEnabled();
