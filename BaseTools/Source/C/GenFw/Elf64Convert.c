@@ -323,6 +323,26 @@ IsSymbolShdr (
   return (BOOLEAN) (strcmp((CHAR8*)mEhdr + Namehdr->sh_offset + Shdr->sh_name, ELF_SYMBOL_SECTION_NAME) == 0);
 }
 
+#define ELF_INIT_ARRAY_SECTION_NAME  ".init_array"
+#define ELF_FINI_ARRAY_SECTION_NAME  ".fini_array"
+
+STATIC
+BOOLEAN
+IsInitFiniArrayShdr (
+  Elf_Shdr *Shdr
+  )
+{
+  Elf_Shdr *Namedr = GetShdrByIndex(mEhdr->e_shstrndx);
+  const CHAR8 *Name = (const CHAR8 *)mEhdr +
+         Namedr->sh_offset +
+         Shdr->sh_name;
+
+  return (BOOLEAN)(
+    strcmp(Name, ELF_INIT_ARRAY_SECTION_NAME) == 0 ||
+    strcmp(Name, ELF_FINI_ARRAY_SECTION_NAME) == 0
+  );
+}
+
 STATIC
 BOOLEAN
 IsDataShdr (
@@ -331,6 +351,9 @@ IsDataShdr (
 {
   if (IsHiiRsrcShdr(Shdr)) {
     return FALSE;
+  }
+  if (IsInitFiniArrayShdr (Shdr)) {
+    return TRUE;
   }
   return (BOOLEAN) (Shdr->sh_flags & (SHF_EXECINSTR | SHF_WRITE | SHF_ALLOC)) == (SHF_ALLOC | SHF_WRITE);
 }
@@ -1386,6 +1409,18 @@ WriteSections64 (
 
       case SHT_NOBITS:
         memset(mCoffFile + mCoffSectionsOffset[Idx], 0, (size_t) Shdr->sh_size);
+        break;
+
+      case SHT_INIT_ARRAY:
+      case SHT_FINI_ARRAY:
+        //NOTE: do the same as the SHT_PROGBITS section (we SHOULd have already determined them as data sections, so there should be space)
+        /* Copy.  */
+        if (Shdr->sh_offset + Shdr->sh_size > mFileBufferSize) {
+          return FALSE;
+        }
+        memcpy(mCoffFile + mCoffSectionsOffset[Idx],
+              (UINT8*)mEhdr + Shdr->sh_offset,
+              (size_t) Shdr->sh_size);
         break;
 
       default:

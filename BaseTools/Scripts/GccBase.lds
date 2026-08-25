@@ -85,6 +85,67 @@ SECTIONS {
    */
   .build-id (INFO) : { *(.note.gnu.build-id) }
 
+  /*
+   * Retain the GCC static / global constructor / initializer and destructors / finalizer
+   */
+  .init_array : {
+    PROVIDE_HIDDEN(__init_array_start = .);
+
+    KEEP(*(SORT_BY_INIT_PRIORITY(.init_array.*)))
+    KEEP(*(.init_array))
+
+    PROVIDE_HIDDEN(__init_array_end = .);
+
+    PROVIDE_HIDDEN(__libc_init_array_start = .);
+
+    KEEP(*(SORT_BY_NAME(.__libc_init.*)))
+
+    PROVIDE_HIDDEN(__libc_init_array_end = .);
+  }
+
+  .fini_array : {
+    PROVIDE_HIDDEN(__fini_array_start = .);
+
+    KEEP(*(SORT_BY_INIT_PRIORITY(.fini_array.*)))
+    KEEP(*(.fini_array))
+
+    PROVIDE_HIDDEN(__fini_array_end = .);
+
+    PROVIDE_HIDDEN(__libc_fini_array_start = .);
+
+    KEEP(*(SORT_BY_NAME(.__libc_fini.*)))
+
+    PROVIDE_HIDDEN(__libc_fini_array_end = .);
+  }
+
+  /*
+   * Error on unsupported (or not yet implemented) sections for construction / destruction
+   */
+  .preinit_array : {
+    *(.preinit_array)
+  }
+  ASSERT(SIZEOF(.preinit_array) == 0, "error: .preinit_array is not supported (yet)")
+
+  .init : {
+    *(.init)
+  }
+  ASSERT(SIZEOF(.init) == 0, "error: .init is deprecated (System V uses it, and GCC uses other mechanisms)")
+
+  .fini : {
+    *(.fini)
+  }
+  ASSERT(SIZEOF(.fini) == 0, "error: .fini is deprecated (System V uses it, and GCC uses other mechanisms)")
+
+  .ctors : {
+    *(.ctors)
+  }
+  ASSERT(SIZEOF(.ctors) == 0, "error: .ctors is not implemented yet (C++ uses that)")
+
+  .dtors : {
+    *(.dtors)
+  }
+  ASSERT(SIZEOF(.dtors) == 0, "error: .dtors is not implemented yet (C++ uses that)")
+
   /DISCARD/ : {
     *(.note.GNU-stack)
     *(.gnu_debuglink)
