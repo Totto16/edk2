@@ -12,6 +12,9 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 
+#if defined(__CRYPTO_COMPILE_STANDALONE)
+
+
 //
 // -- Time Management Routines --
 //
@@ -249,3 +252,5 @@ gettimeofday (
   tv->tv_usec = 0;
   return 0;
 }
+
+#endif

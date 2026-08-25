@@ -166,7 +166,8 @@ InternalPkcs1v2Encrypt (
   //
   // Determine the required buffer length for malloc'ing.
   //
-  if (EVP_PKEY_encrypt (PkeyCtx, NULL, &OutDataSize, InData, InDataSize) <= 0) {
+  _Static_assert(sizeof(UINTN) == sizeof(size_t));
+  if (EVP_PKEY_encrypt (PkeyCtx, NULL, (size_t*)&OutDataSize, InData, InDataSize) <= 0) {
     //
     // Fail to determine output buffer size.
     //
@@ -187,7 +188,8 @@ InternalPkcs1v2Encrypt (
   //
   // Encrypt Data.
   //
-  if (EVP_PKEY_encrypt (PkeyCtx, OutData, &OutDataSize, InData, InDataSize) <= 0) {
+  _Static_assert(sizeof(UINTN) == sizeof(size_t));
+  if (EVP_PKEY_encrypt (PkeyCtx, OutData, (size_t*)&OutDataSize, InData, InDataSize) <= 0) {
     //
     // Fail to encrypt data, need to free the output buffer.
     //
@@ -514,7 +516,8 @@ InternalPkcs1v2Decrypt (
   //
   // Determine the required buffer length for malloc'ing.
   //
-  ReturnCode = EVP_PKEY_decrypt (PkeyCtx, NULL, &TempDataSize, EncryptedData, EncryptedDataSize);
+  _Static_assert(sizeof(UINTN) == sizeof(size_t));
+  ReturnCode = EVP_PKEY_decrypt (PkeyCtx, NULL, (size_t*)&TempDataSize, EncryptedData, EncryptedDataSize);
   if (ReturnCode <= 0) {
     //
     // Fail to determine output buffer size.
@@ -537,7 +540,8 @@ InternalPkcs1v2Decrypt (
   //
   // Decrypt Data.
   //
-  ReturnCode = EVP_PKEY_decrypt (PkeyCtx, TempData, &TempDataSize, EncryptedData, EncryptedDataSize);
+  _Static_assert(sizeof(UINTN) == sizeof(size_t));
+  ReturnCode = EVP_PKEY_decrypt (PkeyCtx, TempData, (size_t*)&TempDataSize, EncryptedData, EncryptedDataSize);
   if (ReturnCode <= 0) {
     //
     // Fail to decrypt data, need to free the output buffer.

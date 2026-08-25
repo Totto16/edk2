@@ -42,13 +42,33 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 // SIXTY_FOUR_BIT, because 'long' is 32-bit and only 'long long' is
 // 64-bit. Since using 'long long' works fine on GCC too, just do that.
 //
+#define SSL_HAVE_ARCH_DEFINE
 #define SIXTY_FOUR_BIT
   #elif defined (MDE_CPU_IA32) || defined (MDE_CPU_EBC)
 #define THIRTY_TWO_BIT
+#define SSL_HAVE_ARCH_DEFINE
   #else
     #error Unknown target architecture
   #endif
 #endif
+
+#if !defined(__CRYPTO_COMPILE_STANDALONE)
+#include <StdLib/Include/stdlib.h>
+#include <StdLib/Include/time.h>
+#include <StdLib/Include/sys/time.h>
+#include <StdLib/Include/stddef.h>
+#include <StdLib/Include/stdint.h>
+#include <StdLib/Include/limits.h>
+#include <StdLib/Include/string.h>
+#include <StdLib/Include/stdarg.h>
+#include <StdLib/Include/stdio.h>
+#include <StdLib/Include/assert.h>
+#include <StdLib/Include/ctype.h>
+#include <StdLib/Include/errno.h>
+#include <StdLib/Include/sys/types.h>
+#include <StdLib/Include/unistd.h>
+#include <ProcessorBind.h>
+#else
 
 //
 // Map all va_xxxx elements to VA_xxx defined in MdePkg/Include/Base.h
@@ -57,6 +77,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #define va_arg    VA_ARG
 #define va_start  VA_START
 #define va_end    VA_END
+
+
 
 //
 // Definitions for global constants used by CRT library routines
@@ -491,4 +513,6 @@ memcpy (
 #define UINTPTR_MAX  0xFFFFFFFFFFFFFFFFUL
 #else
 #define UINTPTR_MAX  0xFFFFFFFFUL
+#endif
+
 #endif

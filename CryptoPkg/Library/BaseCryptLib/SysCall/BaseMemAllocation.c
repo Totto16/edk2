@@ -7,8 +7,13 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
+
+
 #include <CrtLibSupport.h>
 #include <Library/MemoryAllocationLib.h>
+
+#if defined(__CRYPTO_COMPILE_STANDALONE)
+
 
 //
 // Extra header to record the memory buffer size from malloc routine.
@@ -120,3 +125,5 @@ free (
     FreePool (PoolHdr);
   }
 }
+
+#endif

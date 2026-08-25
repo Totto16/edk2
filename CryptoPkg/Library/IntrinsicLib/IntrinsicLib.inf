@@ -84,3 +84,5 @@
    MSFT:DEBUG_*_X64_CC_FLAGS              == /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1b2s /Gy /FIAutoGen.h /EHs-c- /GR- /GF /Zi /Gm
    MSFT:RELEASE_*_X64_CC_FLAGS            == /nologo /c /WX /GS- /X /W4 /Gs32768 /D UNICODE /O1b2s /Gy /FIAutoGen.h /EHs-c- /GR- /GF
   INTEL:*_*_*_CC_FLAGS                    =  /Oi-
+  # define or undefine this based on the usage of StdLib
+  *_*_*_CC_FLAGS                    =  -U__CRYPTO_COMPILE_STANDALONE

@@ -35,6 +35,8 @@ memcpy (
   );
 
 #else
+
+#if defined(__CRYPTO_COMPILE_STANDALONE)
 /* Copies bytes between buffers */
 void *
 memcpy (
@@ -45,5 +47,7 @@ memcpy (
 {
   return CopyMem (dest, src, count);
 }
+
+#endif
 
 #endif
