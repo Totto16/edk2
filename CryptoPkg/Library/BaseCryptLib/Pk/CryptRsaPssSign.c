@@ -165,7 +165,8 @@ RsaPssSign (
   }
 
   if (Result) {
-    Result = EVP_DigestSignFinal (EvpVerifyCtx, Signature, SigSize) > 0;
+  _Static_assert(sizeof(UINTN) == sizeof(size_t));
+    Result = EVP_DigestSignFinal (EvpVerifyCtx, Signature, (size_t*)SigSize) > 0;
   }
 
 _Exit:
@@ -284,10 +285,11 @@ RsaPssSignDigest (
   }
 
   if (Result) {
+    _Static_assert(sizeof(UINTN) == sizeof(size_t));
     Result = EVP_PKEY_sign (
                EvpSignCtx,
                Signature,
-               SigSize,
+               (size_t*)SigSize,
                Digest,
                (UINT32)DigestSize
                ) > 0;

@@ -471,7 +471,8 @@ SlhDsaGetPubKey (
 
   *PublicKeySize = FinalPublicKeySize;
 
-  Result = EVP_PKEY_get_raw_public_key (Ctx->EvpPkey, PublicKey, PublicKeySize);
+  _Static_assert(sizeof(UINTN) == sizeof(size_t));
+  Result = EVP_PKEY_get_raw_public_key (Ctx->EvpPkey, PublicKey, (size_t*)PublicKeySize);
   if (Result != 1) {
     return FALSE;
   }
@@ -580,7 +581,8 @@ SlhDsaSign (
     return FALSE;
   }
 
-  Result = EVP_DigestSign (SignCtx, Signature, SigSize, Message, MessageSize);
+  _Static_assert(sizeof(UINTN) == sizeof(size_t));
+  Result = EVP_DigestSign (SignCtx, Signature, (size_t*)SigSize, Message, MessageSize);
   if (Result != 1) {
     EVP_MD_CTX_free (SignCtx);
     return FALSE;

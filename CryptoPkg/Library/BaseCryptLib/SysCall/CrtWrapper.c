@@ -9,6 +9,8 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 
 #include <CrtLibSupport.h>
 
+#if defined(__CRYPTO_COMPILE_STANDALONE)
+
 int  errno = 0;
 
 FILE  *stderr = NULL;
@@ -21,6 +23,7 @@ int
   IN  VOID  *Buffer1,
   IN  VOID  *Buffer2
   );
+
 
 //
 // Duplicated from EDKII BaseSortLib for qsort() wrapper
@@ -651,3 +654,5 @@ printf (
 {
   return 0;
 }
+
+#endif

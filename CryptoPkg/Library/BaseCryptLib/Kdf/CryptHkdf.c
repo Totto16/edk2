@@ -73,7 +73,8 @@ HkdfMdExtractAndExpand (
   }
 
   if (Result) {
-    Result = EVP_PKEY_derive (pHkdfCtx, Out, &OutSize) > 0;
+    _Static_assert(sizeof(UINTN) == sizeof(size_t));
+    Result = EVP_PKEY_derive (pHkdfCtx, Out, (size_t*)&OutSize) > 0;
   }
 
   EVP_PKEY_CTX_free (pHkdfCtx);
@@ -153,7 +154,8 @@ HkdfMdExtract (
   }
 
   if (Result) {
-    Result = EVP_PKEY_derive (pHkdfCtx, PrkOut, &PrkOutSize) > 0;
+    _Static_assert(sizeof(UINTN) == sizeof(size_t));
+    Result = EVP_PKEY_derive (pHkdfCtx, PrkOut, (size_t*)&PrkOutSize) > 0;
   }
 
   EVP_PKEY_CTX_free (pHkdfCtx);
@@ -220,7 +222,8 @@ HkdfMdExpand (
   }
 
   if (Result) {
-    Result = EVP_PKEY_derive (pHkdfCtx, Out, &OutSize) > 0;
+    _Static_assert(sizeof(UINTN) == sizeof(size_t));
+    Result = EVP_PKEY_derive (pHkdfCtx, Out, (size_t*)&OutSize) > 0;
   }
 
   EVP_PKEY_CTX_free (pHkdfCtx);
